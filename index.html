@@ -2,350 +2,393 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LoL 早見表ツール</title>
-     
+    <!-- スマホアプリのように画面にフィットさせ、ズームを無効化する設定 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LoL 早見表</title>
+    
     <style>
+        /* 全体の初期設定 */
+        * { box-sizing: border-box; }
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            background-color: #1e2328;
+            background-color: #010a13; /* LoL風の背景色を全体に適用 */
             color: #f0e6d2;
-            text-align: center;
-            padding: 10px;
             margin: 0;
+            padding: 0;
+            -webkit-text-size-adjust: 100%;
         }
-        .card {
-            background-color: #010a13;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #c8aa6e;
-            max-width: 600px;
-            margin: 10px auto;
-        }
-        h1 { color: #c8aa6e; font-size: 20px; margin-top: 0; }
         
-        .champ-btn-container {
+        /* アプリ風のコンテナ */
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ヘッダー＆検索エリア (上部に配置) */
+        .top-section {
+            padding: 15px 15px 10px 15px;
+            background-color: #010a13;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        h1 { color: #c8aa6e; font-size: 18px; margin: 0; }
+        
+        .search-row {
+            display: flex;
+            gap: 8px;
+        }
+        #search-input {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px; /* 16px以上にしないとiPhoneで自動ズームされてしまうため必須 */
+            border-radius: 6px;
+            border: 1px solid #3c3c41;
+            background: #1e282d;
+            color: #fff;
+            outline: none;
+        }
+        #search-input:focus { border-color: #c8aa6e; }
+
+        /* 汎用ボタン */
+        .btn {
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid;
+            white-space: nowrap;
+        }
+        .btn-primary { background-color: #1e282d; color: #c8aa6e; border-color: #c8aa6e; }
+        .btn-danger { background-color: transparent; color: #ff4c4c; border-color: #ff4c4c; }
+
+        /* ★ iPhone用UIの要：追従するキャラアイコンバー ★ */
+        .sticky-team-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: #010a13;
+            border-bottom: 2px solid #3c3c41;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+        }
+        /* アイコンの枠（最大5個） */
+        .champ-slot {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #111a21;
+            border: 2px dashed #3c3c41;
             display: flex;
             align-items: center;
-            background-color: #1e282d;
-            border: 2px solid #3c3c41;
-            border-radius: 4px;
-            padding: 5px 10px;
-            gap: 12px;
+            justify-content: center;
+            position: relative;
             cursor: pointer;
             transition: 0.2s;
         }
-        .champ-btn-container.active {
-            border: 2px solid #c8aa6e;
-            background-color: #2a3c46;
-        }
-        .champ-icon {
-            width: 40px;
-            height: 40px;
+        .champ-slot img {
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #1e282d;
         }
-        .champ-info {
+        /* 選択中のキャラの強調 */
+        .champ-slot.active {
+            border-color: #c8aa6e;
+            transform: scale(1.1);
+        }
+        .champ-slot.active img {
+            border-color: #c8aa6e;
+            box-shadow: 0 0 10px rgba(200, 170, 110, 0.6);
+        }
+
+        /* 詳細エリア */
+        .detail-area {
+            flex-grow: 1;
+            padding: 15px;
+            background-color: #111a21;
+        }
+        .detail-header {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 2px;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid #3c3c41;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
         }
-        .champ-name {
-            font-size: 14px;
-            font-weight: bold;
-            color: #f0e6d2;
-        }
-        .champ-name.active-text { color: #c8aa6e; }
+        .detail-title { margin: 0; color: #c8aa6e; font-size: 22px; }
+        .role-text { color: #a09b8c; font-size: 12px; margin-left: 8px; }
         
-        .role-badge {
-            font-size: 10px;
-            color: #a09b8c;
-            background: #111a21;
-            padding: 2px 6px;
-            border-radius: 10px;
-            border: 1px solid #3c3c41;
-        }
-        
-        /* 対策アイテム用のタグスタイルを追加 */
         .item-badge {
             display: inline-block;
             background-color: #2b1a1a;
             color: #ff6b6b;
             border: 1px solid #7c2a2a;
-            padding: 2px 8px;
+            padding: 4px 10px;
             border-radius: 12px;
-            font-size: 11px;
+            font-size: 12px;
+            font-weight: bold;
             margin-right: 6px;
             margin-bottom: 6px;
         }
-        
-        .remove-btn {
-            background: none;
-            border: none;
-            color: #ff4c4c;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            padding: 0 10px;
-            margin-left: auto;
-        }
-        
-        .action-btn {
-            padding: 8px 16px;
-            font-size: 14px;
-            background-color: #1e282d;
-            color: #c8aa6e;
-            border: 1px solid #c8aa6e;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .action-btn:hover { background-color: #2a3c46; }
-        
-        .detail-box {
-            background: #111a21;
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #3c3c41;
-            text-align: left;
-            margin-top: 15px;
-        }
+
+        .info-section { margin-bottom: 15px; }
+        .info-label { color: #a09b8c; font-size: 12px; margin-bottom: 4px; display: block; font-weight: bold; }
+        .info-text { color: #f0e6d2; font-size: 14px; line-height: 1.5; margin: 0; }
+        .info-text.ult { color: #c8aa6e; font-weight: bold; }
 
         .memo-textarea {
             width: 100%;
-            height: 80px;
+            height: 100px;
             background: #1e282d;
             color: #00d4ff;
             border: 1px solid #3c3c41;
-            border-radius: 4px;
-            padding: 8px;
-            font-size: 14px;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 15px;
             font-family: inherit;
-            box-sizing: border-box;
-            resize: vertical;
+            resize: none; /* スマホではリサイズ不可にする */
         }
-        .memo-textarea:focus {
-            outline: none;
-            border-color: #00d4ff;
-        }
+        .memo-textarea:focus { outline: none; border-color: #00d4ff; }
+        
+        .empty-state { text-align: center; color: #666; margin-top: 40px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>敵チーム選択</h1>
-        
-        <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
-            <input type="text" id="search-input" list="champ-list" placeholder="キャラ名を入力..." style="padding: 8px; font-size: 16px; width: 50%; border-radius: 4px; border: 1px solid #3c3c41; background: #1e282d; color: #fff;">
+<div class="app-container">
+    
+    <!-- 上部検索・コントロールエリア -->
+    <div class="top-section">
+        <div class="header-row">
+            <h1>LoL Quick Reference</h1>
+            <button onclick="resetTeam()" class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;">全クリア</button>
+        </div>
+        <div class="search-row">
+            <input type="text" id="search-input" list="champ-list" placeholder="キャラ名を入力...">
             <datalist id="champ-list"></datalist>
-            <button onclick="addChampion()" class="action-btn">追加</button>
-            <button onclick="resetTeam()" class="action-btn" style="color: #ff4c4c; border-color: #ff4c4c;">リセット</button>
-        </div>
-
-        <div id="selected-team" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-            <!-- キャラボタン -->
-        </div>
-
-        <hr style="border-top: 1px solid #3c3c41;">
-
-        <div id="detail-area" style="min-height: 150px;">
-            <p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>
+            <button onclick="addChampion()" class="btn btn-primary">追加</button>
         </div>
     </div>
+
+    <!-- 追従するキャラアイコンバー (最大5枠) -->
+    <div class="sticky-team-bar" id="selected-team">
+        <!-- 初期状態の空スロット -->
+        <div class="champ-slot"></div>
+        <div class="champ-slot"></div>
+        <div class="champ-slot"></div>
+        <div class="champ-slot"></div>
+        <div class="champ-slot"></div>
+    </div>
+
+    <!-- 詳細表示エリア -->
+    <div class="detail-area" id="detail-area">
+        <div class="empty-state">
+            👆 上の検索欄から敵チームのキャラを追加してください
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase対応スクリプト -->
 <script type="module">
-        // Firebaseの最新機能（v9モジュラーSDK）を読み込む
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // ▼▼▼ ここを自分の firebaseConfig に書き換えてください ▼▼▼
-        const firebaseConfig = {
-            apiKey: "AIzaSyA2TcDboCe_vdW622zEtG15-zkYj3ePjN4",
-            authDomain: "lol-memo-app.firebaseapp.com",
-            projectId: "lol-memo-app",
-            storageBucket: "lol-memo-app.firebasestorage.app",
-            messagingSenderId: "389241235779",
-            appId: "1:389241235779:web:62e345a781bd0c3831a7f6"
-        };
-        // ▲▲▲ ここまで ▲▲▲
+    // ▼▼▼ Firebaseの設定情報（ご自身のものに置き換えてください） ▼▼▼
+    const firebaseConfig = {
+        apiKey: "AIzaSyA2TcDboCe_vdW622zEtG15-zkYj3ePjN4",
+        authDomain: "lol-memo-app.firebaseapp.com",
+        projectId: "lol-memo-app",
+        storageBucket: "lol-memo-app.firebasestorage.app",
+        messagingSenderId: "389241235779",
+        appId: "1:389241235779:web:62e345a781bd0c3831a7f6"
+    };
+    // ▲▲▲ ここまで ▲▲▲
 
-        // Firebaseとデータベースの起動
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        // 状態管理用の変数
-        let allChampions = [];
-        let enemyTeam = [];
-        let activeChamp = null; 
-        const D_DRAGON_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/champion/";
+    let allChampions = [];
+    let enemyTeam = [];
+    let activeChamp = null; 
+    const D_DRAGON_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/champion/";
+    const roleFiles = ['tanks.json', 'fighters.json', 'mages.json', 'assassins.json', 'marksmen.json', 'supports.json'];
 
-        const roleFiles = ['tanks.json', 'fighters.json', 'mages.json', 'assassins.json', 'marksmen.json', 'supports.json'];
-
-        async function init() {
-            try {
-                allChampions = []; 
-                for (const file of roleFiles) {
-                    try {
-                        const response = await fetch(file);
-                        if (response.ok) {
-                            const data = await response.json();
-                            allChampions = allChampions.concat(data);
-                        }
-                    } catch (e) {
-                        console.error(`${file} の読み込みエラー:`, e);
+    async function init() {
+        try {
+            for (const file of roleFiles) {
+                try {
+                    const response = await fetch(file);
+                    if (response.ok) {
+                        const data = await response.json();
+                        allChampions = allChampions.concat(data);
                     }
+                } catch (e) {
+                    console.error(`${file} 読み込みエラー:`, e);
                 }
-                const dataList = document.getElementById('champ-list');
-                allChampions.forEach(champ => {
-                    const option = document.createElement('option');
-                    option.value = champ.name;
-                    dataList.appendChild(option);
+            }
+            const dataList = document.getElementById('champ-list');
+            allChampions.forEach(champ => {
+                const option = document.createElement('option');
+                option.value = champ.name;
+                dataList.appendChild(option);
+            });
+            renderTeam(); // 初期スロットの描画
+        } catch (error) {
+            console.error("初期化失敗", error);
+        }
+    }
+
+    window.addChampion = function() {
+        const inputElement = document.getElementById('search-input');
+        const champName = inputElement.value;
+        const champ = allChampions.find(c => c.name === champName);
+
+        if (!champ) return;
+        if (enemyTeam.length >= 5) { alert("すでに5体選択されています。"); return; }
+        if (enemyTeam.some(c => c.id === champ.id)) return;
+
+        enemyTeam.push(champ);
+        inputElement.value = '';
+        inputElement.blur(); // スマホのキーボードを閉じる
+        
+        showDetail(champ);
+        renderTeam();
+    }
+
+    window.removeChampion = function(champId) {
+        enemyTeam = enemyTeam.filter(c => c.id !== champId);
+        if (activeChamp && activeChamp.id === champId) {
+            activeChamp = null;
+            document.getElementById('detail-area').innerHTML = '<div class="empty-state">👆 キャラのアイコンをタップして詳細を表示</div>';
+        }
+        renderTeam();
+    }
+
+    window.resetTeam = function() {
+        enemyTeam = [];
+        activeChamp = null;
+        document.getElementById('detail-area').innerHTML = '<div class="empty-state">👆 上の検索欄から敵チームのキャラを追加してください</div>';
+        renderTeam();
+    }
+
+    // アイコンバーの描画（常に5枠表示するiPhone向けUI）
+    function renderTeam() {
+        const teamContainer = document.getElementById('selected-team');
+        teamContainer.innerHTML = ''; 
+
+        for (let i = 0; i < 5; i++) {
+            const slot = document.createElement('div');
+            const champ = enemyTeam[i];
+
+            if (champ) {
+                const isActive = activeChamp === champ;
+                slot.className = `champ-slot ${isActive ? 'active' : ''}`;
+                slot.onclick = () => { showDetail(champ); renderTeam(); };
+                
+                const imgName = champ.id.charAt(0).toUpperCase() + champ.id.slice(1) + ".png";
+                slot.innerHTML = `<img src="${D_DRAGON_URL}${imgName}" alt="${champ.name}">`;
+            } else {
+                slot.className = 'champ-slot'; // 空スロット
+            }
+            teamContainer.appendChild(slot);
+        }
+    }
+
+    function showDetail(champ) {
+        activeChamp = champ;
+        const detailArea = document.getElementById('detail-area');
+        const roleText = champ.role ? champ.role : '未設定';
+        
+        const counterItemsHtml = (champ.counter_items && champ.counter_items.length > 0)
+            ? champ.counter_items.map(item => `<span class="item-badge">${item}</span>`).join('')
+            : '<span style="color: #666; font-size: 12px;">未設定</span>';
+
+        let localMemo = localStorage.getItem(`lol_memo_${champ.id}`) || champ.my_notes || "";
+
+        detailArea.innerHTML = `
+            <div class="detail-header">
+                <div>
+                    <h2 class="detail-title">${champ.name}<span class="role-text">${roleText}</span></h2>
+                </div>
+                <!-- 誤タップ防止のため、削除ボタンを広々とした詳細画面に配置 -->
+                <button onclick="removeChampion('${champ.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">外す</button>
+            </div>
+
+            <div class="info-section">
+                <span class="info-label">対策アイテム</span>
+                <div>${counterItemsHtml}</div>
+            </div>
+
+            <div class="info-section">
+                <span class="info-label">Ult効果</span>
+                <p class="info-text ult">${champ.ult_effect}</p>
+            </div>
+
+            <div class="info-section">
+                <span class="info-label">コンボ</span>
+                <p class="info-text">${champ.combos.join('<br>')}</p>
+            </div>
+
+            <div class="info-section">
+                <span class="info-label">メモ (自動同期中...)</span>
+                <textarea id="memo-${champ.id}" class="memo-textarea" oninput="saveMemo('${champ.id}')">${localMemo}</textarea>
+            </div>
+        `;
+
+        fetchMemoFromFirebase(champ.id);
+    }
+
+    async function fetchMemoFromFirebase(champId) {
+        try {
+            const docRef = doc(db, "memos", champId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const firebaseText = docSnap.data().text;
+                const textarea = document.getElementById(`memo-${champId}`);
+                if (textarea && textarea.value !== firebaseText) {
+                    textarea.value = firebaseText;
+                    localStorage.setItem(`lol_memo_${champId}`, firebaseText);
+                }
+            }
+        } catch (error) {
+            console.error("Firebase取得エラー:", error);
+        }
+    }
+
+    let typingTimer;
+    window.saveMemo = function(champId) {
+        const textarea = document.getElementById(`memo-${champId}`);
+        if (!textarea) return;
+        
+        localStorage.setItem(`lol_memo_${champId}`, textarea.value);
+        clearTimeout(typingTimer);
+        
+        typingTimer = setTimeout(async () => {
+            try {
+                await setDoc(doc(db, "memos", champId), {
+                    text: textarea.value,
+                    updatedAt: new Date()
                 });
             } catch (error) {
-                console.error("全体の初期化に失敗しました", error);
+                console.error("Firebase保存エラー:", error);
             }
-        }
+        }, 1000);
+    }
 
-        // HTMLの onclick から呼び出せるように window に登録する
-        window.addChampion = function() {
-            const inputElement = document.getElementById('search-input');
-            const champName = inputElement.value;
-            const champ = allChampions.find(c => c.name === champName);
-
-            if (!champ) return;
-            if (enemyTeam.length >= 5) { alert("すでに5体選択されています。"); return; }
-            if (enemyTeam.some(c => c.id === champ.id)) return;
-
-            enemyTeam.push(champ);
-            inputElement.value = '';
-            
-            showDetail(champ);
-            renderTeam();
-        }
-
-        window.removeChampion = function(champId, event) {
-            event.stopPropagation(); 
-            enemyTeam = enemyTeam.filter(c => c.id !== champId);
-            if (activeChamp && activeChamp.id === champId) {
-                activeChamp = null;
-                document.getElementById('detail-area').innerHTML = '<p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>';
-            }
-            renderTeam();
-        }
-
-        window.resetTeam = function() {
-            enemyTeam = [];
-            activeChamp = null;
-            document.getElementById('detail-area').innerHTML = '<p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>';
-            renderTeam();
-        }
-
-        function renderTeam() {
-            const teamContainer = document.getElementById('selected-team');
-            teamContainer.innerHTML = ''; 
-
-            enemyTeam.forEach(champ => {
-                const container = document.createElement('div');
-                const isActive = activeChamp === champ;
-                container.className = `champ-btn-container ${isActive ? 'active' : ''}`;
-                container.onclick = () => { showDetail(champ); renderTeam(); };
-
-                const imgName = champ.id.charAt(0).toUpperCase() + champ.id.slice(1) + ".png";
-                const roleText = champ.role ? champ.role : 'ロール未設定';
-                
-                container.innerHTML = `
-                    <img src="${D_DRAGON_URL}${imgName}" class="champ-icon" alt="${champ.name}">
-                    <div class="champ-info">
-                        <span class="champ-name ${isActive ? 'active-text' : ''}">${champ.name}</span>
-                        <span class="role-badge">${roleText}</span>
-                    </div>
-                    <button class="remove-btn" onclick="removeChampion('${champ.id}', event)">×</button>
-                `;
-                teamContainer.appendChild(container);
-            });
-        }
-
-        function showDetail(champ) {
-            activeChamp = champ;
-            const detailArea = document.getElementById('detail-area');
-            const roleText = champ.role ? champ.role : '未設定';
-            
-            const counterItemsHtml = (champ.counter_items && champ.counter_items.length > 0)
-                ? champ.counter_items.map(item => `<span class="item-badge">${item}</span>`).join('')
-                : '<span style="color: #666; font-size: 12px;">未設定</span>';
-
-            // ① まずは表示スピード優先で「ローカル保存データ」または「JSONデータ」を画面に出す
-            let localMemo = localStorage.getItem(`lol_memo_${champ.id}`) || champ.my_notes || "";
-
-            detailArea.innerHTML = `
-                <div style="border-bottom: 1px solid #3c3c41; padding-bottom: 5px; margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px;">
-                    <h2 style="margin: 0; color: #c8aa6e;">${champ.name}</h2>
-                    <span style="color: #a09b8c; font-size: 12px;">${roleText}</span>
-                </div>
-                <div class="detail-box">
-                    <p style="color: #ff6b6b; margin-top: 0; margin-bottom: 5px;"><strong>対策アイテム:</strong></p>
-                    <div style="margin-bottom: 15px;">${counterItemsHtml}</div>
-                    <p style="color: #f0e6d2; margin-top: 0;"><strong>Ult効果:</strong><br>${champ.ult_effect}</p>
-                    <hr style="border: 0; border-top: 1px dashed #3c3c41; margin: 15px 0;">
-                    <p style="color: #a09b8c;"><strong>コンボ:</strong><br>${champ.combos.join('<br>')}</p>
-                    <hr style="border: 0; border-top: 1px dashed #3c3c41; margin: 15px 0;">
-                    <p style="color: #00d4ff; margin-bottom: 5px;"><strong>メモ:</strong> (自動同期中...)</p>
-                    <textarea id="memo-${champ.id}" class="memo-textarea" oninput="saveMemo('${champ.id}')">${localMemo}</textarea>
-                </div>
-            `;
-
-            // ② 裏側でFirebaseから最新のメモを取得し、違いがあれば上書きする
-            fetchMemoFromFirebase(champ.id);
-        }
-
-        // Firebaseからメモを読み込む処理
-        async function fetchMemoFromFirebase(champId) {
-            try {
-                const docRef = doc(db, "memos", champId);
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    const firebaseText = docSnap.data().text;
-                    const textarea = document.getElementById(`memo-${champId}`);
-                    
-                    // クラウド上のメモがローカルと違う場合のみ、画面とローカル保存を最新に書き換える
-                    if (textarea && textarea.value !== firebaseText) {
-                        textarea.value = firebaseText;
-                        localStorage.setItem(`lol_memo_${champId}`, firebaseText);
-                    }
-                }
-            } catch (error) {
-                console.error("Firebaseからのデータ取得エラー:", error);
-            }
-        }
-
-        // タイピングの遅延判定用タイマー
-        let typingTimer;
-
-        // メモを保存する処理
-        window.saveMemo = function(champId) {
-            const textarea = document.getElementById(`memo-${champId}`);
-            if (!textarea) return;
-
-            // ① 表示遅延を防ぐため、まずは瞬時にローカルに保存
-            localStorage.setItem(`lol_memo_${champId}`, textarea.value);
-
-            // ② キーを打つたびに通信すると無料枠を消費しすぎるため、
-            // 「タイピングの手が1秒間止まったら」Firebaseに送信する（デバウンス処理）
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(async () => {
-                try {
-                    await setDoc(doc(db, "memos", champId), {
-                        text: textarea.value,
-                        updatedAt: new Date()
-                    });
-                    console.log(`${champId} のメモをクラウドに同期しました！`);
-                } catch (error) {
-                    console.error("Firebaseへの保存エラー:", error);
-                }
-            }, 1000);
-        }
-
-        // 初期化実行
-        init();
+    init();
 </script>
 </body>
 </html>
