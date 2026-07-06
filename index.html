@@ -2,148 +2,234 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- ↓iPhoneなどのスマホ画面サイズに合わせるための必須タグです -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LoL 早見表ツール (テスト)</title>
+    <title>LoL 早見表ツール</title>
     
     <style>
-        /* 見た目を整える簡単なCSS */
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
+            background-color: #1e2328; /* LoLクライアント風の暗い背景 */
+            color: #f0e6d2; /* LoL風のゴールド/白系の文字色 */
             text-align: center;
-            padding: 20px;
+            padding: 10px;
             margin: 0;
         }
         .card {
-            background-color: #ffffff;
-            padding: 30px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 500px;
-            margin: 40px auto;
+            background-color: #010a13;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #c8aa6e;
+            max-width: 600px;
+            margin: 10px auto;
         }
-        h1 {
-            color: #005a82;
-            font-size: 24px;
+        h1 { color: #c8aa6e; font-size: 20px; margin-top: 0; }
+        
+        /* キャラクターボタンのスタイル */
+        .champ-btn-container {
+            display: flex;
+            align-items: center;
+            background-color: #1e282d;
+            border: 2px solid #3c3c41;
+            border-radius: 4px;
+            padding: 5px;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
         }
-        p {
-            line-height: 1.6;
+        /* 選択中（アクティブ）の時のスタイル */
+        .champ-btn-container.active {
+            border: 2px solid #c8aa6e;
+            background-color: #2a3c46;
+        }
+        .champ-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .champ-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #f0e6d2;
+        }
+        .champ-name.active-text {
+            color: #c8aa6e; /* 選択中の名前はゴールドに */
+        }
+        
+        /* 削除ボタンのスタイル */
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #ff4c4c;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 5px;
+            margin-left: auto; /* 右端に寄せる */
+        }
+        
+        /* 汎用ボタンのスタイル */
+        .action-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            background-color: #1e282d;
+            color: #c8aa6e;
+            border: 1px solid #c8aa6e;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .action-btn:hover { background-color: #2a3c46; }
+        
+        /* 詳細エリア */
+        .detail-box {
+            background: #111a21;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #3c3c41;
+            text-align: left;
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
-<div class="card">
-    <h1>敵チーム選択</h1>
-    
-    <!-- 検索と追加エリア -->
-    <div style="margin-bottom: 20px;">
-        <input type="text" id="search-input" list="champ-list" placeholder="キャラ名を入力..." style="padding: 8px; font-size: 16px; width: 60%;">
-        <datalist id="champ-list">
-            <!-- ここにJavaScriptで候補一覧が自動追加されます -->
-        </datalist>
-        <button onclick="addChampion()" style="padding: 8px 16px; font-size: 16px; background-color: #005a82; color: white; border: none; border-radius: 4px;">追加</button>
-    </div>
 
-    <!-- 選択された5体のリスト -->
-    <div id="selected-team" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-        <!-- ここに選択したキャラのボタンが並びます -->
-    </div>
-
-    <hr>
-
-    <!-- タップしたキャラの詳細表示エリア -->
-    <div id="detail-area" style="text-align: left; min-height: 150px;">
-        <p style="color: #666; text-align: center;">上のリストからキャラを選択してください</p>
-    </div>
-</div>
-
-<script>
-    let allChampions = []; // 全キャラデータを保持する配列
-    let enemyTeam = [];    // 選択された敵チーム(最大5体)を保持する配列
-
-    // ① 初期化：JSONデータを読み込み、サジェスト候補を作る
-    async function init() {
-        try {
-            const response = await fetch('champions.json');
-            allChampions = await response.json();
-            
-            const dataList = document.getElementById('champ-list');
-            allChampions.forEach(champ => {
-                const option = document.createElement('option');
-                option.value = champ.name; // 「アーリ」などが候補に出る
-                dataList.appendChild(option);
-            });
-        } catch (error) {
-            console.error("データの読み込みに失敗しました", error);
-        }
-    }
-
-    // ② キャラを追加する処理
-    function addChampion() {
-        const inputElement = document.getElementById('search-input');
-        const champName = inputElement.value;
-
-        // マスターデータから入力された名前と一致するキャラを探す
-        const champ = allChampions.find(c => c.name === champName);
-
-        if (!champ) {
-            alert("チャンピオンが見つかりません。");
-            return;
-        }
-        if (enemyTeam.length >= 5) {
-            alert("すでに5体選択されています。");
-            return;
-        }
-        if (enemyTeam.includes(champ)) {
-            alert("すでに追加されています。");
-            return;
-        }
-
-        // 敵チーム配列に追加し、入力欄を空にする
-        enemyTeam.push(champ);
-        inputElement.value = '';
+    <div class="card">
+        <h1>敵チーム選択</h1>
         
-        // 画面を更新
-        renderTeam();
-    }
+        <!-- 検索とコントロールエリア -->
+        <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
+            <input type="text" id="search-input" list="champ-list" placeholder="キャラ名を入力..." style="padding: 8px; font-size: 16px; width: 50%; border-radius: 4px; border: 1px solid #3c3c41; background: #1e282d; color: #fff;">
+            <datalist id="champ-list"></datalist>
+            <button onclick="addChampion()" class="action-btn">追加</button>
+            <button onclick="resetTeam()" class="action-btn" style="color: #ff4c4c; border-color: #ff4c4c;">リセット</button>
+        </div>
 
-    // ③ 選択された5体のボタンを画面に描画する処理
-    function renderTeam() {
-        const teamContainer = document.getElementById('selected-team');
-        teamContainer.innerHTML = ''; // 一旦クリア
+        <!-- 選択された5体のリスト -->
+        <div id="selected-team" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+            <!-- ここにキャラボタンが並びます -->
+        </div>
 
-        enemyTeam.forEach((champ, index) => {
-            const btn = document.createElement('button');
-            btn.textContent = champ.name;
-            btn.style.cssText = "padding: 10px 15px; font-size: 16px; border-radius: 20px; border: 1px solid #005a82; background-color: #e6f2f5; cursor: pointer;";
+        <hr style="border-top: 1px solid #3c3c41;">
+
+        <!-- 詳細表示エリア -->
+        <div id="detail-area" style="min-height: 150px;">
+            <p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>
+        </div>
+    </div>
+
+    <script>
+        let allChampions = [];
+        let enemyTeam = [];
+        let activeChamp = null; // 現在選択して詳細を表示しているキャラを保存する変数
+
+        // Riot公式画像API(Data Dragon)のベースURL。パッチバージョンに合わせて更新可能です。
+        const D_DRAGON_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/champion/";
+
+        // ① 初期化
+        async function init() {
+            try {
+                const response = await fetch('champions.json');
+                allChampions = await response.json();
+                
+                const dataList = document.getElementById('champ-list');
+                allChampions.forEach(champ => {
+                    const option = document.createElement('option');
+                    option.value = champ.name;
+                    dataList.appendChild(option);
+                });
+            } catch (error) {
+                console.error("データの読み込みに失敗しました", error);
+            }
+        }
+
+        // ② キャラを追加
+        function addChampion() {
+            const inputElement = document.getElementById('search-input');
+            const champName = inputElement.value;
+            const champ = allChampions.find(c => c.name === champName);
+
+            if (!champ) return;
+            if (enemyTeam.length >= 5) { alert("すでに5体選択されています。"); return; }
+            if (enemyTeam.includes(champ)) return;
+
+            enemyTeam.push(champ);
+            inputElement.value = '';
             
-            // ボタンを押した時に詳細を表示するイベントを登録
-            btn.onclick = () => showDetail(champ);
+            // 追加したら自動的にそのキャラをアクティブにする
+            showDetail(champ);
+            renderTeam();
+        }
+
+        // ③ キャラを個別削除
+        function removeChampion(champ, event) {
+            // 親要素（コンテナ）のクリックイベント（showDetail）が発火しないようにブロックする
+            event.stopPropagation(); 
             
-            teamContainer.appendChild(btn);
-        });
-    }
+            enemyTeam = enemyTeam.filter(c => c !== champ);
+            
+            // 削除したキャラが現在アクティブだった場合、詳細画面をクリアする
+            if (activeChamp === champ) {
+                activeChamp = null;
+                document.getElementById('detail-area').innerHTML = '<p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>';
+            }
+            renderTeam();
+        }
 
-    // ④ キャラクターの詳細を表示する処理
-    function showDetail(champ) {
-        const detailArea = document.getElementById('detail-area');
-        detailArea.innerHTML = `
-            <h2 style="margin-top: 0; color: #005a82;">${champ.name}</h2>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-                <p><strong>Ult効果:</strong><br>${champ.ult_effect}</p>
-                <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
-                <p><strong>コンボ:</strong><br>${champ.combos.join('<br>')}</p>
-                <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
-                <p><strong>メモ:</strong><br>${champ.my_notes}</p>
-            </div>
-        `;
-    }
+        // ④ 全リセット
+        function resetTeam() {
+            enemyTeam = [];
+            activeChamp = null;
+            document.getElementById('detail-area').innerHTML = '<p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>';
+            renderTeam();
+        }
 
-    // 画面読み込み時に初期化関数を実行
-    init();
-</script>
+        // ⑤ 画面にキャラリストを描画
+        function renderTeam() {
+            const teamContainer = document.getElementById('selected-team');
+            teamContainer.innerHTML = ''; 
 
+            enemyTeam.forEach(champ => {
+                const container = document.createElement('div');
+                // アクティブなキャラかどうかでクラスを切り替える
+                const isActive = activeChamp === champ;
+                container.className = `champ-btn-container ${isActive ? 'active' : ''}`;
+                
+                // 行全体をクリックした時の処理
+                container.onclick = () => {
+                    showDetail(champ);
+                    renderTeam(); // 枠線の色を更新するために再描画
+                };
+
+                // JSONの "id" (ahri等) を先頭大文字 (Ahri) に変換して画像URLを作成
+                const imgName = champ.id.charAt(0).toUpperCase() + champ.id.slice(1) + ".png";
+                
+                container.innerHTML = `
+                    <img src="${D_DRAGON_URL}${imgName}" class="champ-icon" alt="${champ.name}">
+                    <span class="champ-name ${isActive ? 'active-text' : ''}">${champ.name}</span>
+                    <button class="remove-btn" onclick="removeChampion(champ, event)">×</button>
+                `;
+                
+                teamContainer.appendChild(container);
+            });
+        }
+
+        // ⑥ 詳細を表示
+        function showDetail(champ) {
+            activeChamp = champ; // 現在アクティブなキャラを記録
+            const detailArea = document.getElementById('detail-area');
+            
+            detailArea.innerHTML = `
+                <h2 style="margin-top: 0; color: #c8aa6e; border-bottom: 1px solid #3c3c41; padding-bottom: 5px;">${champ.name}</h2>
+                <div class="detail-box">
+                    <p style="color: #f0e6d2; margin-top: 0;"><strong>Ult効果:</strong><br>${champ.ult_effect}</p>
+                    <hr style="border: 0; border-top: 1px dashed #3c3c41; margin: 15px 0;">
+                    <p style="color: #a09b8c;"><strong>コンボ:</strong><br>${champ.combos.join('<br>')}</p>
+                    <hr style="border: 0; border-top: 1px dashed #3c3c41; margin: 15px 0;">
+                    <p style="color: #00d4ff;"><strong>メモ:</strong><br>${champ.my_notes}</p>
+                </div>
+            `;
+        }
+
+        init();
+    </script>
 </body>
 </html>
