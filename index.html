@@ -8,8 +8,8 @@
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            background-color: #1e2328; /* LoLクライアント風の暗い背景 */
-            color: #f0e6d2; /* LoL風のゴールド/白系の文字色 */
+            background-color: #1e2328;
+            color: #f0e6d2;
             text-align: center;
             padding: 10px;
             margin: 0;
@@ -24,19 +24,17 @@
         }
         h1 { color: #c8aa6e; font-size: 20px; margin-top: 0; }
         
-        /* キャラクターボタンのスタイル */
         .champ-btn-container {
             display: flex;
             align-items: center;
             background-color: #1e282d;
             border: 2px solid #3c3c41;
             border-radius: 4px;
-            padding: 5px;
-            gap: 10px;
+            padding: 5px 10px;
+            gap: 12px;
             cursor: pointer;
             transition: 0.2s;
         }
-        /* 選択中（アクティブ）の時のスタイル */
         .champ-btn-container.active {
             border: 2px solid #c8aa6e;
             background-color: #2a3c46;
@@ -46,28 +44,52 @@
             height: 40px;
             border-radius: 50%;
         }
+        .champ-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
         .champ-name {
             font-size: 14px;
             font-weight: bold;
             color: #f0e6d2;
         }
-        .champ-name.active-text {
-            color: #c8aa6e; /* 選択中の名前はゴールドに */
+        .champ-name.active-text { color: #c8aa6e; }
+        
+        .role-badge {
+            font-size: 10px;
+            color: #a09b8c;
+            background: #111a21;
+            padding: 2px 6px;
+            border-radius: 10px;
+            border: 1px solid #3c3c41;
         }
         
-        /* 削除ボタンのスタイル */
+        /* 対策アイテム用のタグスタイルを追加 */
+        .item-badge {
+            display: inline-block;
+            background-color: #2b1a1a;
+            color: #ff6b6b;
+            border: 1px solid #7c2a2a;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        
         .remove-btn {
             background: none;
             border: none;
             color: #ff4c4c;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
-            padding: 0 5px;
-            margin-left: auto; /* 右端に寄せる */
+            padding: 0 10px;
+            margin-left: auto;
         }
         
-        /* 汎用ボタンのスタイル */
         .action-btn {
             padding: 8px 16px;
             font-size: 14px;
@@ -79,7 +101,6 @@
         }
         .action-btn:hover { background-color: #2a3c46; }
         
-        /* 詳細エリア */
         .detail-box {
             background: #111a21;
             padding: 15px;
@@ -88,6 +109,24 @@
             text-align: left;
             margin-top: 15px;
         }
+
+        .memo-textarea {
+            width: 100%;
+            height: 80px;
+            background: #1e282d;
+            color: #00d4ff;
+            border: 1px solid #3c3c41;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        .memo-textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
     </style>
 </head>
 <body>
@@ -95,7 +134,6 @@
     <div class="card">
         <h1>敵チーム選択</h1>
         
-        <!-- 検索とコントロールエリア -->
         <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
             <input type="text" id="search-input" list="champ-list" placeholder="キャラ名を入力..." style="padding: 8px; font-size: 16px; width: 50%; border-radius: 4px; border: 1px solid #3c3c41; background: #1e282d; color: #fff;">
             <datalist id="champ-list"></datalist>
@@ -103,14 +141,12 @@
             <button onclick="resetTeam()" class="action-btn" style="color: #ff4c4c; border-color: #ff4c4c;">リセット</button>
         </div>
 
-        <!-- 選択された5体のリスト -->
         <div id="selected-team" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-            <!-- ここにキャラボタンが並びます -->
+            <!-- キャラボタン -->
         </div>
 
         <hr style="border-top: 1px solid #3c3c41;">
 
-        <!-- 詳細表示エリア -->
         <div id="detail-area" style="min-height: 150px;">
             <p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>
         </div>
@@ -119,16 +155,32 @@
     <script>
         let allChampions = [];
         let enemyTeam = [];
-        let activeChamp = null; // 現在選択して詳細を表示しているキャラを保存する変数
-
-        // Riot公式画像API(Data Dragon)のベースURL。パッチバージョンに合わせて更新可能です。
+        let activeChamp = null; 
         const D_DRAGON_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/champion/";
 
-        // ① 初期化
+        const roleFiles = [
+            'tanks.json',
+            'fighters.json',
+            'mages.json',
+            'assassins.json',
+            'marksmen.json',
+            'supports.json'
+        ];
+
         async function init() {
             try {
-                const response = await fetch('champions.json');
-                allChampions = await response.json();
+                allChampions = []; 
+                for (const file of roleFiles) {
+                    try {
+                        const response = await fetch(file);
+                        if (response.ok) {
+                            const data = await response.json();
+                            allChampions = allChampions.concat(data);
+                        }
+                    } catch (e) {
+                        console.error(`${file} の読み込みエラー:`, e);
+                    }
+                }
                 
                 const dataList = document.getElementById('champ-list');
                 allChampions.forEach(champ => {
@@ -137,11 +189,10 @@
                     dataList.appendChild(option);
                 });
             } catch (error) {
-                console.error("データの読み込みに失敗しました", error);
+                console.error("全体の初期化に失敗しました", error);
             }
         }
 
-        // ② キャラを追加
         function addChampion() {
             const inputElement = document.getElementById('search-input');
             const champName = inputElement.value;
@@ -149,32 +200,27 @@
 
             if (!champ) return;
             if (enemyTeam.length >= 5) { alert("すでに5体選択されています。"); return; }
-            if (enemyTeam.includes(champ)) return;
+            if (enemyTeam.some(c => c.id === champ.id)) return;
 
             enemyTeam.push(champ);
             inputElement.value = '';
             
-            // 追加したら自動的にそのキャラをアクティブにする
             showDetail(champ);
             renderTeam();
         }
 
-        // ③ キャラを個別削除
-        function removeChampion(champ, event) {
-            // 親要素（コンテナ）のクリックイベント（showDetail）が発火しないようにブロックする
+        function removeChampion(champId, event) {
             event.stopPropagation(); 
             
-            enemyTeam = enemyTeam.filter(c => c !== champ);
+            enemyTeam = enemyTeam.filter(c => c.id !== champId);
             
-            // 削除したキャラが現在アクティブだった場合、詳細画面をクリアする
-            if (activeChamp === champ) {
+            if (activeChamp && activeChamp.id === champId) {
                 activeChamp = null;
                 document.getElementById('detail-area').innerHTML = '<p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>';
             }
             renderTeam();
         }
 
-        // ④ 全リセット
         function resetTeam() {
             enemyTeam = [];
             activeChamp = null;
@@ -182,51 +228,70 @@
             renderTeam();
         }
 
-        // ⑤ 画面にキャラリストを描画
         function renderTeam() {
             const teamContainer = document.getElementById('selected-team');
             teamContainer.innerHTML = ''; 
 
             enemyTeam.forEach(champ => {
                 const container = document.createElement('div');
-                // アクティブなキャラかどうかでクラスを切り替える
                 const isActive = activeChamp === champ;
                 container.className = `champ-btn-container ${isActive ? 'active' : ''}`;
                 
-                // 行全体をクリックした時の処理
                 container.onclick = () => {
                     showDetail(champ);
-                    renderTeam(); // 枠線の色を更新するために再描画
+                    renderTeam(); 
                 };
 
-                // JSONの "id" (ahri等) を先頭大文字 (Ahri) に変換して画像URLを作成
                 const imgName = champ.id.charAt(0).toUpperCase() + champ.id.slice(1) + ".png";
+                const roleText = champ.role ? champ.role : 'ロール未設定';
                 
                 container.innerHTML = `
                     <img src="${D_DRAGON_URL}${imgName}" class="champ-icon" alt="${champ.name}">
-                    <span class="champ-name ${isActive ? 'active-text' : ''}">${champ.name}</span>
-                    <button class="remove-btn" onclick="removeChampion(champ, event)">×</button>
+                    <div class="champ-info">
+                        <span class="champ-name ${isActive ? 'active-text' : ''}">${champ.name}</span>
+                        <span class="role-badge">${roleText}</span>
+                    </div>
+                    <button class="remove-btn" onclick="removeChampion('${champ.id}', event)">×</button>
                 `;
                 
                 teamContainer.appendChild(container);
             });
         }
 
-        // ⑥ 詳細を表示
         function showDetail(champ) {
-            activeChamp = champ; // 現在アクティブなキャラを記録
+            activeChamp = champ;
             const detailArea = document.getElementById('detail-area');
+            const roleText = champ.role ? champ.role : '未設定';
+            const savedMemo = localStorage.getItem(`lol_memo_${champ.id}`) || champ.my_notes || "";
             
+            // 対策アイテムをHTMLのバッジに変換する処理（データがない場合は「未設定」を表示）
+            const counterItemsHtml = (champ.counter_items && champ.counter_items.length > 0)
+                ? champ.counter_items.map(item => `<span class="item-badge">${item}</span>`).join('')
+                : '<span style="color: #666; font-size: 12px;">未設定</span>';
+
             detailArea.innerHTML = `
-                <h2 style="margin-top: 0; color: #c8aa6e; border-bottom: 1px solid #3c3c41; padding-bottom: 5px;">${champ.name}</h2>
+                <div style="border-bottom: 1px solid #3c3c41; padding-bottom: 5px; margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px;">
+                    <h2 style="margin: 0; color: #c8aa6e;">${champ.name}</h2>
+                    <span style="color: #a09b8c; font-size: 12px;">${roleText}</span>
+                </div>
                 <div class="detail-box">
+                    <p style="color: #ff6b6b; margin-top: 0; margin-bottom: 5px;"><strong>対策アイテム:</strong></p>
+                    <div style="margin-bottom: 15px;">${counterItemsHtml}</div>
                     <p style="color: #f0e6d2; margin-top: 0;"><strong>Ult効果:</strong><br>${champ.ult_effect}</p>
                     <hr style="border: 0; border-top: 1px dashed #3c3c41; margin: 15px 0;">
                     <p style="color: #a09b8c;"><strong>コンボ:</strong><br>${champ.combos.join('<br>')}</p>
                     <hr style="border: 0; border-top: 1px dashed #3c3c41; margin: 15px 0;">
-                    <p style="color: #00d4ff;"><strong>メモ:</strong><br>${champ.my_notes}</p>
+                    <p style="color: #00d4ff; margin-bottom: 5px;"><strong>メモ:</strong> (入力すると自動保存されます)</p>
+                    <textarea id="memo-${champ.id}" class="memo-textarea" oninput="saveMemo('${champ.id}')">${savedMemo}</textarea>
                 </div>
             `;
+        }
+
+        function saveMemo(champId) {
+            const textarea = document.getElementById(`memo-${champId}`);
+            if (textarea) {
+                localStorage.setItem(`lol_memo_${champId}`, textarea.value);
+            }
         }
 
         init();
