@@ -151,21 +151,33 @@
             <p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>
         </div>
     </div>
+<script type="module">
+        // Firebaseの最新機能（v9モジュラーSDK）を読み込む
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script>
+        // ▼▼▼ ここを自分の firebaseConfig に書き換えてください ▼▼▼
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2TcDboCe_vdW622zEtG15-zkYj3ePjN4",
+            authDomain: "lol-memo-app.firebaseapp.com",
+            projectId: "lol-memo-app",
+            storageBucket: "lol-memo-app.firebasestorage.app",
+            messagingSenderId: "389241235779",
+            appId: "1:389241235779:web:62e345a781bd0c3831a7f6"
+        };
+        // ▲▲▲ ここまで ▲▲▲
+
+        // Firebaseとデータベースの起動
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 状態管理用の変数
         let allChampions = [];
         let enemyTeam = [];
         let activeChamp = null; 
         const D_DRAGON_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/champion/";
 
-        const roleFiles = [
-            'tanks.json',
-            'fighters.json',
-            'mages.json',
-            'assassins.json',
-            'marksmen.json',
-            'supports.json'
-        ];
+        const roleFiles = ['tanks.json', 'fighters.json', 'mages.json', 'assassins.json', 'marksmen.json', 'supports.json'];
 
         async function init() {
             try {
@@ -181,7 +193,6 @@
                         console.error(`${file} の読み込みエラー:`, e);
                     }
                 }
-                
                 const dataList = document.getElementById('champ-list');
                 allChampions.forEach(champ => {
                     const option = document.createElement('option');
@@ -193,7 +204,8 @@
             }
         }
 
-        function addChampion() {
+        // HTMLの onclick から呼び出せるように window に登録する
+        window.addChampion = function() {
             const inputElement = document.getElementById('search-input');
             const champName = inputElement.value;
             const champ = allChampions.find(c => c.name === champName);
@@ -209,11 +221,9 @@
             renderTeam();
         }
 
-        function removeChampion(champId, event) {
+        window.removeChampion = function(champId, event) {
             event.stopPropagation(); 
-            
             enemyTeam = enemyTeam.filter(c => c.id !== champId);
-            
             if (activeChamp && activeChamp.id === champId) {
                 activeChamp = null;
                 document.getElementById('detail-area').innerHTML = '<p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>';
@@ -221,7 +231,7 @@
             renderTeam();
         }
 
-        function resetTeam() {
+        window.resetTeam = function() {
             enemyTeam = [];
             activeChamp = null;
             document.getElementById('detail-area').innerHTML = '<p style="color: #888; text-align: center; margin-top: 30px;">上のリストからキャラを選択してください</p>';
@@ -236,11 +246,7 @@
                 const container = document.createElement('div');
                 const isActive = activeChamp === champ;
                 container.className = `champ-btn-container ${isActive ? 'active' : ''}`;
-                
-                container.onclick = () => {
-                    showDetail(champ);
-                    renderTeam(); 
-                };
+                container.onclick = () => { showDetail(champ); renderTeam(); };
 
                 const imgName = champ.id.charAt(0).toUpperCase() + champ.id.slice(1) + ".png";
                 const roleText = champ.role ? champ.role : 'ロール未設定';
@@ -253,7 +259,6 @@
                     </div>
                     <button class="remove-btn" onclick="removeChampion('${champ.id}', event)">×</button>
                 `;
-                
                 teamContainer.appendChild(container);
             });
         }
@@ -262,12 +267,13 @@
             activeChamp = champ;
             const detailArea = document.getElementById('detail-area');
             const roleText = champ.role ? champ.role : '未設定';
-            const savedMemo = localStorage.getItem(`lol_memo_${champ.id}`) || champ.my_notes || "";
             
-            // 対策アイテムをHTMLのバッジに変換する処理（データがない場合は「未設定」を表示）
             const counterItemsHtml = (champ.counter_items && champ.counter_items.length > 0)
                 ? champ.counter_items.map(item => `<span class="item-badge">${item}</span>`).join('')
                 : '<span style="color: #666; font-size: 12px;">未設定</span>';
+
+            // ① まずは表示スピード優先で「ローカル保存データ」または「JSONデータ」を画面に出す
+            let localMemo = localStorage.getItem(`lol_memo_${champ.id}`) || champ.my_notes || "";
 
             detailArea.innerHTML = `
                 <div style="border-bottom: 1px solid #3c3c41; padding-bottom: 5px; margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px;">
@@ -281,20 +287,65 @@
                     <hr style="border: 0; border-top: 1px dashed #3c3c41; margin: 15px 0;">
                     <p style="color: #a09b8c;"><strong>コンボ:</strong><br>${champ.combos.join('<br>')}</p>
                     <hr style="border: 0; border-top: 1px dashed #3c3c41; margin: 15px 0;">
-                    <p style="color: #00d4ff; margin-bottom: 5px;"><strong>メモ:</strong> (入力すると自動保存されます)</p>
-                    <textarea id="memo-${champ.id}" class="memo-textarea" oninput="saveMemo('${champ.id}')">${savedMemo}</textarea>
+                    <p style="color: #00d4ff; margin-bottom: 5px;"><strong>メモ:</strong> (自動同期中...)</p>
+                    <textarea id="memo-${champ.id}" class="memo-textarea" oninput="saveMemo('${champ.id}')">${localMemo}</textarea>
                 </div>
             `;
+
+            // ② 裏側でFirebaseから最新のメモを取得し、違いがあれば上書きする
+            fetchMemoFromFirebase(champ.id);
         }
 
-        function saveMemo(champId) {
-            const textarea = document.getElementById(`memo-${champId}`);
-            if (textarea) {
-                localStorage.setItem(`lol_memo_${champId}`, textarea.value);
+        // Firebaseからメモを読み込む処理
+        async function fetchMemoFromFirebase(champId) {
+            try {
+                const docRef = doc(db, "memos", champId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const firebaseText = docSnap.data().text;
+                    const textarea = document.getElementById(`memo-${champId}`);
+                    
+                    // クラウド上のメモがローカルと違う場合のみ、画面とローカル保存を最新に書き換える
+                    if (textarea && textarea.value !== firebaseText) {
+                        textarea.value = firebaseText;
+                        localStorage.setItem(`lol_memo_${champId}`, firebaseText);
+                    }
+                }
+            } catch (error) {
+                console.error("Firebaseからのデータ取得エラー:", error);
             }
         }
 
+        // タイピングの遅延判定用タイマー
+        let typingTimer;
+
+        // メモを保存する処理
+        window.saveMemo = function(champId) {
+            const textarea = document.getElementById(`memo-${champId}`);
+            if (!textarea) return;
+
+            // ① 表示遅延を防ぐため、まずは瞬時にローカルに保存
+            localStorage.setItem(`lol_memo_${champId}`, textarea.value);
+
+            // ② キーを打つたびに通信すると無料枠を消費しすぎるため、
+            // 「タイピングの手が1秒間止まったら」Firebaseに送信する（デバウンス処理）
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(async () => {
+                try {
+                    await setDoc(doc(db, "memos", champId), {
+                        text: textarea.value,
+                        updatedAt: new Date()
+                    });
+                    console.log(`${champId} のメモをクラウドに同期しました！`);
+                } catch (error) {
+                    console.error("Firebaseへの保存エラー:", error);
+                }
+            }, 1000);
+        }
+
+        // 初期化実行
         init();
-    </script>
+</script>
 </body>
 </html>
