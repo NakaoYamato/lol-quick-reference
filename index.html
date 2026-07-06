@@ -1,38 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <!-- ↓iPhoneなどのスマホ画面サイズに合わせるための必須タグです -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL 早見表ツール (テスト)</title>
+    
+    <style>
+        /* 見た目を整える簡単なCSS */
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .card {
+            background-color: #ffffff;
+            padding: 30px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 40px auto;
+        }
+        h1 {
+            color: #005a82;
+            font-size: 24px;
+        }
+        p {
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
 <div class="card">
-        <h1>LoL 早見表ツール</h1>
-        <div id="data-container">
-            <p>ここにチャンピオンのデータが表示されます...</p>
-        </div>
+    <h1>敵チーム選択</h1>
+    
+    <!-- 検索と追加エリア -->
+    <div style="margin-bottom: 20px;">
+        <input type="text" id="search-input" list="champ-list" placeholder="キャラ名を入力..." style="padding: 8px; font-size: 16px; width: 60%;">
+        <datalist id="champ-list">
+            <!-- ここにJavaScriptで候補一覧が自動追加されます -->
+        </datalist>
+        <button onclick="addChampion()" style="padding: 8px 16px; font-size: 16px; background-color: #005a82; color: white; border: none; border-radius: 4px;">追加</button>
     </div>
 
-    <script>
-        // 非同期処理でJSONデータ（マスターデータ）を読み込む
-        async function loadChampions() {
-            try {
-                const response = await fetch('champions.json');
-                const champions = await response.json();
-                
-                // 読み込んだデータをコンテナに流し込んで描画（レンダリング）する
-                const container = document.getElementById('data-container');
-                container.innerHTML = ''; // 一旦中身を空にする
+    <!-- 選択された5体のリスト -->
+    <div id="selected-team" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+        <!-- ここに選択したキャラのボタンが並びます -->
+    </div>
 
-                // 配列のデータを取り出してHTMLを生成
-                champions.forEach(champ => {
-                    const champHtml = `
-                        <div style="border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px; text-align: left;">
-                            <h3>${champ.name}</h3>
-                            <p><strong>Ult効果:</strong> ${champ.ult_effect}</p>
-                            <p><strong>メモ:</strong> ${champ.my_notes}</p>
-                        </div>
-                    `;
-                    container.innerHTML += champHtml;
-                });
+    <hr>
 
-            } catch (error) {
-                console.error("データの読み込みに失敗しました", error);
-            }
+    <!-- タップしたキャラの詳細表示エリア -->
+    <div id="detail-area" style="text-align: left; min-height: 150px;">
+        <p style="color: #666; text-align: center;">上のリストからキャラを選択してください</p>
+    </div>
+</div>
+
+<script>
+    let allChampions = []; // 全キャラデータを保持する配列
+    let enemyTeam = [];    // 選択された敵チーム(最大5体)を保持する配列
+
+    // ① 初期化：JSONデータを読み込み、サジェスト候補を作る
+    async function init() {
+        try {
+            const response = await fetch('champions.json');
+            allChampions = await response.json();
+            
+            const dataList = document.getElementById('champ-list');
+            allChampions.forEach(champ => {
+                const option = document.createElement('option');
+                option.value = champ.name; // 「アーリ」などが候補に出る
+                dataList.appendChild(option);
+            });
+        } catch (error) {
+            console.error("データの読み込みに失敗しました", error);
+        }
+    }
+
+    // ② キャラを追加する処理
+    function addChampion() {
+        const inputElement = document.getElementById('search-input');
+        const champName = inputElement.value;
+
+        // マスターデータから入力された名前と一致するキャラを探す
+        const champ = allChampions.find(c => c.name === champName);
+
+        if (!champ) {
+            alert("チャンピオンが見つかりません。");
+            return;
+        }
+        if (enemyTeam.length >= 5) {
+            alert("すでに5体選択されています。");
+            return;
+        }
+        if (enemyTeam.includes(champ)) {
+            alert("すでに追加されています。");
+            return;
         }
 
-        // 画面が表示された時に読み込み関数を実行
-        loadChampions();
-    </script>
+        // 敵チーム配列に追加し、入力欄を空にする
+        enemyTeam.push(champ);
+        inputElement.value = '';
+        
+        // 画面を更新
+        renderTeam();
+    }
+
+    // ③ 選択された5体のボタンを画面に描画する処理
+    function renderTeam() {
+        const teamContainer = document.getElementById('selected-team');
+        teamContainer.innerHTML = ''; // 一旦クリア
+
+        enemyTeam.forEach((champ, index) => {
+            const btn = document.createElement('button');
+            btn.textContent = champ.name;
+            btn.style.cssText = "padding: 10px 15px; font-size: 16px; border-radius: 20px; border: 1px solid #005a82; background-color: #e6f2f5; cursor: pointer;";
+            
+            // ボタンを押した時に詳細を表示するイベントを登録
+            btn.onclick = () => showDetail(champ);
+            
+            teamContainer.appendChild(btn);
+        });
+    }
+
+    // ④ キャラクターの詳細を表示する処理
+    function showDetail(champ) {
+        const detailArea = document.getElementById('detail-area');
+        detailArea.innerHTML = `
+            <h2 style="margin-top: 0; color: #005a82;">${champ.name}</h2>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <p><strong>Ult効果:</strong><br>${champ.ult_effect}</p>
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
+                <p><strong>コンボ:</strong><br>${champ.combos.join('<br>')}</p>
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
+                <p><strong>メモ:</strong><br>${champ.my_notes}</p>
+            </div>
+        `;
+    }
+
+    // 画面読み込み時に初期化関数を実行
+    init();
+</script>
+
+</body>
+</html>

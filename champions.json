@@ -12,5 +12,47 @@
     "ult_effect": "R: アンストッパブル・フォース (指定地点に突撃して打ち上げ)",
     "combos": ["R -> E -> Q -> W"],
     "my_notes": "サイラスで奪う最強クラスのUlt。味方のCCに合わせて後入りすると決まりやすい。"
+  },
+  {
+    "id": "Test0",
+    "name": "テスト0",
+    "ult_effect": "R: Test",
+    "combos": ["Test"],
+    "my_notes": "Test"
+  },
+  {
+    "id": "Test1",
+    "name": "テスト1",
+    "ult_effect": "R: Test",
+    "combos": ["Test"],
+    "my_notes": "Test"
+  },
+  {
+    "id": "Test2",
+    "name": "テスト2",
+    "ult_effect": "R: Test",
+    "combos": ["Test"],
+    "my_notes": "Test"
+  },
+  {
+    "id": "Test3",
+    "name": "テスト3",
+    "ult_effect": "R: Test",
+    "combos": ["Test"],
+    "my_notes": "Test"
+  },
+  {
+    "id": "Test4",
+    "name": "テスト4",
+    "ult_effect": "R: Test",
+    "combos": ["Test"],
+    "my_notes": "Test"
+  },
+  {
+    "id": "Test5",
+    "name": "テスト5",
+    "ult_effect": "R: Test",
+    "combos": ["Test"],
+    "my_notes": "Test"
   }
 ]
