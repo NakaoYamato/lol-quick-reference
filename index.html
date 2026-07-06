@@ -2,23 +2,20 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- スマホアプリのように画面にフィットさせ、ズームを無効化する設定 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LoL 早見表</title>
     
     <style>
-        /* 全体の初期設定 */
         * { box-sizing: border-box; }
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            background-color: #010a13; /* LoL風の背景色を全体に適用 */
+            background-color: #010a13;
             color: #f0e6d2;
             margin: 0;
             padding: 0;
             -webkit-text-size-adjust: 100%;
         }
         
-        /* アプリ風のコンテナ */
         .app-container {
             max-width: 600px;
             margin: 0 auto;
@@ -27,10 +24,10 @@
             min-height: 100vh;
         }
 
-        /* ヘッダー＆検索エリア (上部に配置) */
         .top-section {
             padding: 15px 15px 10px 15px;
             background-color: #010a13;
+            z-index: 200; /* サジェストを上に表示するため */
         }
         .header-row {
             display: flex;
@@ -40,14 +37,16 @@
         }
         h1 { color: #c8aa6e; font-size: 18px; margin: 0; }
         
+        /* 検索エリアのスタイルをアップデート */
         .search-row {
+            position: relative; /* サジェストボックスの基準位置にする */
             display: flex;
             gap: 8px;
         }
         #search-input {
             flex-grow: 1;
             padding: 10px;
-            font-size: 16px; /* 16px以上にしないとiPhoneで自動ズームされてしまうため必須 */
+            font-size: 16px;
             border-radius: 6px;
             border: 1px solid #3c3c41;
             background: #1e282d;
@@ -56,7 +55,6 @@
         }
         #search-input:focus { border-color: #c8aa6e; }
 
-        /* 汎用ボタン */
         .btn {
             padding: 10px 14px;
             font-size: 14px;
@@ -69,7 +67,33 @@
         .btn-primary { background-color: #1e282d; color: #c8aa6e; border-color: #c8aa6e; }
         .btn-danger { background-color: transparent; color: #ff4c4c; border-color: #ff4c4c; }
 
-        /* ★ iPhone用UIの要：追従するキャラアイコンバー ★ */
+        /* ★ 新しいサジェストボックスのスタイル ★ */
+        .suggestion-box {
+            position: absolute;
+            top: calc(100% + 4px); /* 検索窓のすぐ下 */
+            left: 0;
+            width: calc(100% - 60px); /* 追加ボタンの幅を避ける */
+            max-height: 250px;
+            overflow-y: auto;
+            background-color: #111a21;
+            border: 1px solid #c8aa6e;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none; /* 初期状態は非表示 */
+            flex-direction: column;
+        }
+        .suggestion-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #3c3c41;
+            color: #f0e6d2;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:active { background-color: #1e282d; }
+
         .sticky-team-bar {
             position: sticky;
             top: 0;
@@ -82,7 +106,6 @@
             gap: 12px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
         }
-        /* アイコンの枠（最大5個） */
         .champ-slot {
             width: 50px;
             height: 50px;
@@ -103,17 +126,9 @@
             object-fit: cover;
             border: 2px solid #1e282d;
         }
-        /* 選択中のキャラの強調 */
-        .champ-slot.active {
-            border-color: #c8aa6e;
-            transform: scale(1.1);
-        }
-        .champ-slot.active img {
-            border-color: #c8aa6e;
-            box-shadow: 0 0 10px rgba(200, 170, 110, 0.6);
-        }
+        .champ-slot.active { border-color: #c8aa6e; transform: scale(1.1); }
+        .champ-slot.active img { border-color: #c8aa6e; box-shadow: 0 0 10px rgba(200, 170, 110, 0.6); }
 
-        /* 詳細エリア */
         .detail-area {
             flex-grow: 1;
             padding: 15px;
@@ -158,7 +173,7 @@
             padding: 10px;
             font-size: 15px;
             font-family: inherit;
-            resize: none; /* スマホではリサイズ不可にする */
+            resize: none;
         }
         .memo-textarea:focus { outline: none; border-color: #00d4ff; }
         
@@ -169,22 +184,21 @@
 
 <div class="app-container">
     
-    <!-- 上部検索・コントロールエリア -->
     <div class="top-section">
         <div class="header-row">
             <h1>LoL Quick Reference</h1>
             <button onclick="resetTeam()" class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;">全クリア</button>
         </div>
         <div class="search-row">
-            <input type="text" id="search-input" list="champ-list" placeholder="キャラ名を入力...">
-            <datalist id="champ-list"></datalist>
-            <button onclick="addChampion()" class="btn btn-primary">追加</button>
+            <!-- autocomplete="off" を追加してOS標準のサジェストを無効化 -->
+            <input type="text" id="search-input" placeholder="キャラ名を入力..." autocomplete="off">
+            <button onclick="addChampionBtn()" class="btn btn-primary">追加</button>
+            <!-- ここにカスタムサジェストが表示されます -->
+            <div id="suggestion-box" class="suggestion-box"></div>
         </div>
     </div>
 
-    <!-- 追従するキャラアイコンバー (最大5枠) -->
     <div class="sticky-team-bar" id="selected-team">
-        <!-- 初期状態の空スロット -->
         <div class="champ-slot"></div>
         <div class="champ-slot"></div>
         <div class="champ-slot"></div>
@@ -192,7 +206,6 @@
         <div class="champ-slot"></div>
     </div>
 
-    <!-- 詳細表示エリア -->
     <div class="detail-area" id="detail-area">
         <div class="empty-state">
             👆 上の検索欄から敵チームのキャラを追加してください
@@ -224,7 +237,8 @@
     let enemyTeam = [];
     let activeChamp = null; 
     const D_DRAGON_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/champion/";
-    const roleFiles = ['tanks.json', 'fighters.json', 'mages.json', 'assassins.json', 'marksmen.json', 'supports.json'];
+    // extras.json を追加したリスト
+    const roleFiles = ['tanks.json', 'fighters.json', 'mages.json', 'assassins.json', 'marksmen.json', 'supports.json', 'extras.json'];
 
     async function init() {
         try {
@@ -239,34 +253,118 @@
                     console.error(`${file} 読み込みエラー:`, e);
                 }
             }
-            const dataList = document.getElementById('champ-list');
-            allChampions.forEach(champ => {
-                const option = document.createElement('option');
-                option.value = champ.name;
-                dataList.appendChild(option);
-            });
-            renderTeam(); // 初期スロットの描画
+            renderTeam();
         } catch (error) {
             console.error("初期化失敗", error);
         }
     }
 
-    window.addChampion = function() {
-        const inputElement = document.getElementById('search-input');
-        const champName = inputElement.value;
-        const champ = allChampions.find(c => c.name === champName);
+    // ========== サジェストと平仮名検索のロジック ==========
+    
+    // 平仮名をカタカナに変換し、・や＝などの記号と空白を除外して比較しやすくする関数
+    function normalizeString(str) {
+        if (!str) return "";
+        // 平仮名 -> カタカナ変換
+        const kana = str.replace(/[\u3041-\u3096]/g, match => String.fromCharCode(match.charCodeAt(0) + 0x60));
+        // 記号（・＝）やスペースを削除
+        return kana.replace(/[・＝\s]/g, '');
+    }
 
-        if (!champ) return;
+    const inputElement = document.getElementById('search-input');
+    const suggestionBox = document.getElementById('suggestion-box');
+
+    // 文字が入力されたらサジェストを表示する
+    inputElement.addEventListener('input', (e) => {
+        showSuggestions(e.target.value);
+    });
+
+    // 検索窓をタップした時も、文字が入っていればサジェストを再表示する
+    inputElement.addEventListener('focus', (e) => {
+        showSuggestions(e.target.value);
+    });
+
+    // 検索窓以外の場所をタップしたらサジェストを隠す
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-row')) {
+            suggestionBox.style.display = 'none';
+        }
+    });
+
+    function showSuggestions(query) {
+        suggestionBox.innerHTML = ''; // 中身をリセット
+        
+        // 入力が空の場合は隠す
+        if (!query.trim()) {
+            suggestionBox.style.display = 'none';
+            return;
+        }
+
+        const normalizedQuery = normalizeString(query);
+
+        // クエリに一致するキャラを検索（名前の部分一致）
+        const filteredChamps = allChampions.filter(champ => {
+            const normalizedName = normalizeString(champ.name);
+            return normalizedName.includes(normalizedQuery);
+        });
+
+        // 候補がない場合は隠す
+        if (filteredChamps.length === 0) {
+            suggestionBox.style.display = 'none';
+            return;
+        }
+
+        // 候補をリスト化して追加
+        filteredChamps.forEach(champ => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'suggestion-item';
+            itemDiv.textContent = champ.name;
+            
+            // サジェストをタップした時の処理
+            itemDiv.onmousedown = (e) => {
+                e.preventDefault(); // 入力欄からフォーカスが外れるのを防ぐ
+                addChampion(champ);
+            };
+            
+            suggestionBox.appendChild(itemDiv);
+        });
+
+        suggestionBox.style.display = 'flex';
+    }
+
+    // キャラクターをチームに追加する共通処理
+    function addChampion(champ) {
         if (enemyTeam.length >= 5) { alert("すでに5体選択されています。"); return; }
-        if (enemyTeam.some(c => c.id === champ.id)) return;
+        if (enemyTeam.some(c => c.id === champ.id)) {
+            // すでにいる場合は入力欄をリセットして閉じるだけ
+            inputElement.value = '';
+            suggestionBox.style.display = 'none';
+            inputElement.blur();
+            return;
+        }
 
         enemyTeam.push(champ);
-        inputElement.value = '';
-        inputElement.blur(); // スマホのキーボードを閉じる
+        inputElement.value = ''; // 入力欄を空にする
+        suggestionBox.style.display = 'none'; // サジェストを隠す
+        inputElement.blur(); // iPhoneのキーボードを閉じる
         
         showDetail(champ);
         renderTeam();
     }
+
+    // 「追加」ボタンが押された時の処理
+    window.addChampionBtn = function() {
+        const champName = inputElement.value;
+        const normalizedQuery = normalizeString(champName);
+        
+        // 完全一致するキャラ、または一番近いキャラを探す
+        const champ = allChampions.find(c => normalizeString(c.name) === normalizedQuery) 
+                   || allChampions.find(c => normalizeString(c.name).includes(normalizedQuery));
+
+        if (champ) {
+            addChampion(champ);
+        }
+    }
+    // ================================================
 
     window.removeChampion = function(champId) {
         enemyTeam = enemyTeam.filter(c => c.id !== champId);
@@ -284,7 +382,6 @@
         renderTeam();
     }
 
-    // アイコンバーの描画（常に5枠表示するiPhone向けUI）
     function renderTeam() {
         const teamContainer = document.getElementById('selected-team');
         teamContainer.innerHTML = ''; 
@@ -301,7 +398,7 @@
                 const imgName = champ.id.charAt(0).toUpperCase() + champ.id.slice(1) + ".png";
                 slot.innerHTML = `<img src="${D_DRAGON_URL}${imgName}" alt="${champ.name}">`;
             } else {
-                slot.className = 'champ-slot'; // 空スロット
+                slot.className = 'champ-slot';
             }
             teamContainer.appendChild(slot);
         }
@@ -323,7 +420,6 @@
                 <div>
                     <h2 class="detail-title">${champ.name}<span class="role-text">${roleText}</span></h2>
                 </div>
-                <!-- 誤タップ防止のため、削除ボタンを広々とした詳細画面に配置 -->
                 <button onclick="removeChampion('${champ.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">外す</button>
             </div>
 
