@@ -27,7 +27,7 @@
         .top-section {
             padding: 15px 15px 10px 15px;
             background-color: #010a13;
-            z-index: 200; /* サジェストを上に表示するため */
+            z-index: 200;
         }
         .header-row {
             display: flex;
@@ -37,9 +37,8 @@
         }
         h1 { color: #c8aa6e; font-size: 18px; margin: 0; }
         
-        /* 検索エリアのスタイルをアップデート */
         .search-row {
-            position: relative; /* サジェストボックスの基準位置にする */
+            position: relative;
             display: flex;
             gap: 8px;
         }
@@ -67,12 +66,11 @@
         .btn-primary { background-color: #1e282d; color: #c8aa6e; border-color: #c8aa6e; }
         .btn-danger { background-color: transparent; color: #ff4c4c; border-color: #ff4c4c; }
 
-        /* ★ 新しいサジェストボックスのスタイル ★ */
         .suggestion-box {
             position: absolute;
-            top: calc(100% + 4px); /* 検索窓のすぐ下 */
+            top: calc(100% + 4px);
             left: 0;
-            width: calc(100% - 60px); /* 追加ボタンの幅を避ける */
+            width: calc(100% - 60px);
             max-height: 250px;
             overflow-y: auto;
             background-color: #111a21;
@@ -80,7 +78,7 @@
             border-radius: 6px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 1000;
-            display: none; /* 初期状態は非表示 */
+            display: none;
             flex-direction: column;
         }
         .suggestion-item {
@@ -142,20 +140,41 @@
             padding-bottom: 8px;
             margin-bottom: 15px;
         }
-        .detail-title { margin: 0; color: #c8aa6e; font-size: 22px; }
-        .role-text { color: #a09b8c; font-size: 12px; margin-left: 8px; }
+        .detail-title { margin: 0; color: #c8aa6e; font-size: 22px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;}
+        .role-text { color: #a09b8c; font-size: 12px; }
         
+        /* ★ AD / AP ダメージタイプのバッジスタイル ★ */
+        .dmg-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .dmg-ad { background-color: #3a1c1c; color: #ff6b6b; border: 1px solid #7c2a2a; }
+        .dmg-ap { background-color: #1c263a; color: #6ba4ff; border: 1px solid #2a4c7c; }
+        .dmg-hybrid { background-color: #3a1c38; color: #d66bff; border: 1px solid #7c2a76; }
+        .dmg-tank { background-color: #1c3a20; color: #6bff83; border: 1px solid #2a7c38; }
+
+        /* ★ アイコン付きアイテムバッジのスタイル ★ */
         .item-badge {
-            display: inline-block;
-            background-color: #2b1a1a;
-            color: #ff6b6b;
-            border: 1px solid #7c2a2a;
-            padding: 4px 10px;
-            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            background-color: #1e282d;
+            color: #f0e6d2;
+            border: 1px solid #3c3c41;
+            padding: 2px 10px 2px 2px;
+            border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
             margin-right: 6px;
             margin-bottom: 6px;
+        }
+        .item-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 6px;
+            border: 1px solid #000;
         }
 
         .info-section { margin-bottom: 15px; }
@@ -183,17 +202,14 @@
 <body>
 
 <div class="app-container">
-    
     <div class="top-section">
         <div class="header-row">
             <h1>LoL Quick Reference</h1>
             <button onclick="resetTeam()" class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;">全クリア</button>
         </div>
         <div class="search-row">
-            <!-- autocomplete="off" を追加してOS標準のサジェストを無効化 -->
             <input type="text" id="search-input" placeholder="キャラ名を入力..." autocomplete="off">
             <button onclick="addChampionBtn()" class="btn btn-primary">追加</button>
-            <!-- ここにカスタムサジェストが表示されます -->
             <div id="suggestion-box" class="suggestion-box"></div>
         </div>
     </div>
@@ -211,10 +227,8 @@
             👆 上の検索欄から敵チームのキャラを追加してください
         </div>
     </div>
-
 </div>
 
-<!-- Firebase対応スクリプト -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -237,8 +251,42 @@
     let enemyTeam = [];
     let activeChamp = null; 
     const D_DRAGON_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/champion/";
-    // extras.json を追加したリスト
+    const D_DRAGON_ITEM_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/item/";
     const roleFiles = ['tanks.json', 'fighters.json', 'mages.json', 'assassins.json', 'marksmen.json', 'supports.json', 'extras.json'];
+
+    // ★ 日本語のアイテム名をRiot公式のアイテムIDに変換する辞書 ★
+    const ITEM_MAP = {
+        "ゾーニャの砂時計": "3157",
+        "バンシーヴェール": "3102",
+        "マーキュリーブーツ": "3111",
+        "プレートスチールキャップ": "3047",
+        "モレロノミコン": "3165",
+        "モータルリマインダー": "3033",
+        "ブランブルベスト": "3076",
+        "ソーンメイル": "3075",
+        "ケミパンクチェーンソード": "6609",
+        "エッジ・オブ・ナイト": "3814",
+        "マルモティウスの胃袋": "3156",
+        "水銀のサッシュ": "3140",
+        "ミカエルの祝福": "3222",
+        "ドミニクリガード": "3036",
+        "ヴォイドスタッフ": "3135",
+        "ブラッククリーバー": "3071",
+        "ルインドキング・ブレード": "3153",
+        "ライアンドリーの仮面": "3151",
+        "フローズンハート": "3110",
+        "ランデュイン・オーメン": "3143",
+        "フォース・オブ・ネイチャー": "4401",
+        "サーペントファング": "6695",
+        "ガーディアンエンジェル": "3026",
+        "デスダンス": "6333",
+        "アイスボーンガントレット": "6662",
+        "オラクルレンズ": "3364",
+        "コントロールワード": "2055",
+        "アンブラルグレイブ": "3179",
+        "忘却のオーブ": "3916",
+        "ストップウォッチ": "2420"
+    };
 
     async function init() {
         try {
@@ -259,112 +307,66 @@
         }
     }
 
-    // ========== サジェストと平仮名検索のロジック ==========
-    
-    // 平仮名をカタカナに変換し、・や＝などの記号と空白を除外して比較しやすくする関数
     function normalizeString(str) {
         if (!str) return "";
-        // 平仮名 -> カタカナ変換
         const kana = str.replace(/[\u3041-\u3096]/g, match => String.fromCharCode(match.charCodeAt(0) + 0x60));
-        // 記号（・＝）やスペースを削除
         return kana.replace(/[・＝\s]/g, '');
     }
 
     const inputElement = document.getElementById('search-input');
     const suggestionBox = document.getElementById('suggestion-box');
 
-    // 文字が入力されたらサジェストを表示する
-    inputElement.addEventListener('input', (e) => {
-        showSuggestions(e.target.value);
-    });
-
-    // 検索窓をタップした時も、文字が入っていればサジェストを再表示する
-    inputElement.addEventListener('focus', (e) => {
-        showSuggestions(e.target.value);
-    });
-
-    // 検索窓以外の場所をタップしたらサジェストを隠す
+    inputElement.addEventListener('input', (e) => { showSuggestions(e.target.value); });
+    inputElement.addEventListener('focus', (e) => { showSuggestions(e.target.value); });
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.search-row')) {
-            suggestionBox.style.display = 'none';
-        }
+        if (!e.target.closest('.search-row')) suggestionBox.style.display = 'none';
     });
 
     function showSuggestions(query) {
-        suggestionBox.innerHTML = ''; // 中身をリセット
-        
-        // 入力が空の場合は隠す
-        if (!query.trim()) {
-            suggestionBox.style.display = 'none';
-            return;
-        }
+        suggestionBox.innerHTML = ''; 
+        if (!query.trim()) { suggestionBox.style.display = 'none'; return; }
 
         const normalizedQuery = normalizeString(query);
+        const filteredChamps = allChampions.filter(champ => normalizeString(champ.name).includes(normalizedQuery));
 
-        // クエリに一致するキャラを検索（名前の部分一致）
-        const filteredChamps = allChampions.filter(champ => {
-            const normalizedName = normalizeString(champ.name);
-            return normalizedName.includes(normalizedQuery);
-        });
+        if (filteredChamps.length === 0) { suggestionBox.style.display = 'none'; return; }
 
-        // 候補がない場合は隠す
-        if (filteredChamps.length === 0) {
-            suggestionBox.style.display = 'none';
-            return;
-        }
-
-        // 候補をリスト化して追加
         filteredChamps.forEach(champ => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'suggestion-item';
             itemDiv.textContent = champ.name;
-            
-            // サジェストをタップした時の処理
             itemDiv.onmousedown = (e) => {
-                e.preventDefault(); // 入力欄からフォーカスが外れるのを防ぐ
+                e.preventDefault(); 
                 addChampion(champ);
             };
-            
             suggestionBox.appendChild(itemDiv);
         });
-
         suggestionBox.style.display = 'flex';
     }
 
-    // キャラクターをチームに追加する共通処理
     function addChampion(champ) {
         if (enemyTeam.length >= 5) { alert("すでに5体選択されています。"); return; }
         if (enemyTeam.some(c => c.id === champ.id)) {
-            // すでにいる場合は入力欄をリセットして閉じるだけ
             inputElement.value = '';
             suggestionBox.style.display = 'none';
             inputElement.blur();
             return;
         }
-
         enemyTeam.push(champ);
-        inputElement.value = ''; // 入力欄を空にする
-        suggestionBox.style.display = 'none'; // サジェストを隠す
-        inputElement.blur(); // iPhoneのキーボードを閉じる
-        
+        inputElement.value = ''; 
+        suggestionBox.style.display = 'none';
+        inputElement.blur(); 
         showDetail(champ);
         renderTeam();
     }
 
-    // 「追加」ボタンが押された時の処理
     window.addChampionBtn = function() {
         const champName = inputElement.value;
         const normalizedQuery = normalizeString(champName);
-        
-        // 完全一致するキャラ、または一番近いキャラを探す
         const champ = allChampions.find(c => normalizeString(c.name) === normalizedQuery) 
                    || allChampions.find(c => normalizeString(c.name).includes(normalizedQuery));
-
-        if (champ) {
-            addChampion(champ);
-        }
+        if (champ) addChampion(champ);
     }
-    // ================================================
 
     window.removeChampion = function(champId) {
         enemyTeam = enemyTeam.filter(c => c.id !== champId);
@@ -385,16 +387,13 @@
     function renderTeam() {
         const teamContainer = document.getElementById('selected-team');
         teamContainer.innerHTML = ''; 
-
         for (let i = 0; i < 5; i++) {
             const slot = document.createElement('div');
             const champ = enemyTeam[i];
-
             if (champ) {
                 const isActive = activeChamp === champ;
                 slot.className = `champ-slot ${isActive ? 'active' : ''}`;
                 slot.onclick = () => { showDetail(champ); renderTeam(); };
-                
                 const imgName = champ.id.charAt(0).toUpperCase() + champ.id.slice(1) + ".png";
                 slot.innerHTML = `<img src="${D_DRAGON_URL}${imgName}" alt="${champ.name}">`;
             } else {
@@ -409,8 +408,29 @@
         const detailArea = document.getElementById('detail-area');
         const roleText = champ.role ? champ.role : '未設定';
         
+        // ★ AD/APバッジの自動振り分け用ロジック ★
+        let dmgBadgeHtml = "";
+        if (champ.damage_type) {
+            // JSONに damage_type が設定されている場合
+            const type = champ.damage_type.toUpperCase();
+            let badgeClass = "dmg-hybrid";
+            if (type === "AD") badgeClass = "dmg-ad";
+            if (type === "AP") badgeClass = "dmg-ap";
+            if (type === "TANK") badgeClass = "dmg-tank";
+            dmgBadgeHtml = `<span class="dmg-badge ${badgeClass}">${champ.damage_type}</span>`;
+        }
+
+        // ★ アイコン付きアイテムバッジの生成 ★
         const counterItemsHtml = (champ.counter_items && champ.counter_items.length > 0)
-            ? champ.counter_items.map(item => `<span class="item-badge">${item}</span>`).join('')
+            ? champ.counter_items.map(item => {
+                const itemId = ITEM_MAP[item];
+                // 辞書にIDが存在すればアイコン付き、なければ文字だけのバッジを出力
+                if (itemId) {
+                    return `<span class="item-badge"><img src="${D_DRAGON_ITEM_URL}${itemId}.png" class="item-icon" alt="${item}"> ${item}</span>`;
+                } else {
+                    return `<span class="item-badge" style="padding: 4px 10px; border-radius: 12px; background: #2b1a1a; color: #ff6b6b; border-color: #7c2a2a;">${item}</span>`;
+                }
+            }).join('')
             : '<span style="color: #666; font-size: 12px;">未設定</span>';
 
         let localMemo = localStorage.getItem(`lol_memo_${champ.id}`) || champ.my_notes || "";
@@ -418,7 +438,11 @@
         detailArea.innerHTML = `
             <div class="detail-header">
                 <div>
-                    <h2 class="detail-title">${champ.name}<span class="role-text">${roleText}</span></h2>
+                    <h2 class="detail-title">
+                        ${champ.name}
+                        ${dmgBadgeHtml}
+                    </h2>
+                    <span class="role-text">${roleText}</span>
                 </div>
                 <button onclick="removeChampion('${champ.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">外す</button>
             </div>
