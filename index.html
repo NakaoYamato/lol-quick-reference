@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LoL 早見表</title>
-     
+    
     <style>
         * { box-sizing: border-box; }
         body {
@@ -16,184 +16,62 @@
             -webkit-text-size-adjust: 100%;
         }
         
-        .app-container {
-            max-width: 600px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .top-section {
-            padding: 15px 15px 10px 15px;
-            background-color: #010a13;
-            z-index: 200;
-        }
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
+        .app-container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100vh; }
+        .top-section { padding: 15px 15px 10px 15px; background-color: #010a13; z-index: 200; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         h1 { color: #c8aa6e; font-size: 18px; margin: 0; }
         
-        .search-row {
-            position: relative;
-            display: flex;
-            gap: 8px;
-        }
-        #search-input {
-            flex-grow: 1;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 6px;
-            border: 1px solid #3c3c41;
-            background: #1e282d;
-            color: #fff;
-            outline: none;
-        }
+        .search-row { position: relative; display: flex; gap: 8px; }
+        #search-input { flex-grow: 1; padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #3c3c41; background: #1e282d; color: #fff; outline: none; }
         #search-input:focus { border-color: #c8aa6e; }
 
-        .btn {
-            padding: 10px 14px;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            border: 1px solid;
-            white-space: nowrap;
-        }
+        .btn { padding: 10px 14px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; border: 1px solid; white-space: nowrap; text-decoration: none; display: inline-block; text-align: center; }
         .btn-primary { background-color: #1e282d; color: #c8aa6e; border-color: #c8aa6e; }
         .btn-danger { background-color: transparent; color: #ff4c4c; border-color: #ff4c4c; }
+        .btn-opgg { background-color: #5383e8; color: #fff; border-color: #5383e8; padding: 4px 10px; font-size: 12px; border-radius: 4px; }
 
-        .suggestion-box {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            width: calc(100% - 60px);
-            max-height: 250px;
-            overflow-y: auto;
-            background-color: #111a21;
-            border: 1px solid #c8aa6e;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-        }
-        .suggestion-item {
-            padding: 12px 15px;
-            border-bottom: 1px solid #3c3c41;
-            color: #f0e6d2;
-            font-size: 16px;
-            cursor: pointer;
-            text-align: left;
-        }
+        .suggestion-box { position: absolute; top: calc(100% + 4px); left: 0; width: calc(100% - 60px); max-height: 250px; overflow-y: auto; background-color: #111a21; border: 1px solid #c8aa6e; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 1000; display: none; flex-direction: column; }
+        .suggestion-item { padding: 12px 15px; border-bottom: 1px solid #3c3c41; color: #f0e6d2; font-size: 16px; cursor: pointer; text-align: left; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:active { background-color: #1e282d; }
 
-        .sticky-team-bar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background-color: #010a13;
-            border-bottom: 2px solid #3c3c41;
-            padding: 10px 15px;
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-        }
-        .champ-slot {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #111a21;
-            border: 2px dashed #3c3c41;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .champ-slot img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #1e282d;
-        }
+        .sticky-team-bar { position: sticky; top: 0; z-index: 100; background-color: #010a13; border-bottom: 2px solid #3c3c41; padding: 10px 15px; display: flex; justify-content: center; gap: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+        .champ-slot { width: 50px; height: 50px; border-radius: 50%; background-color: #111a21; border: 2px dashed #3c3c41; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: 0.2s; }
+        .champ-slot img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #1e282d; }
         .champ-slot.active { border-color: #c8aa6e; transform: scale(1.1); }
         .champ-slot.active img { border-color: #c8aa6e; box-shadow: 0 0 10px rgba(200, 170, 110, 0.6); }
 
-        .detail-area {
-            flex-grow: 1;
-            padding: 15px;
-            background-color: #111a21;
-        }
-        .detail-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            border-bottom: 1px solid #3c3c41;
-            padding-bottom: 8px;
-            margin-bottom: 15px;
-        }
+        .detail-area { flex-grow: 1; padding: 15px; background-color: #111a21; }
+        .detail-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #3c3c41; padding-bottom: 8px; margin-bottom: 15px; }
         .detail-title { margin: 0; color: #c8aa6e; font-size: 22px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;}
         .role-text { color: #a09b8c; font-size: 12px; }
         
-        /* ★ AD / AP ダメージタイプのバッジスタイル ★ */
-        .dmg-badge {
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
+        .dmg-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
         .dmg-ad { background-color: #3a1c1c; color: #ff6b6b; border: 1px solid #7c2a2a; }
         .dmg-ap { background-color: #1c263a; color: #6ba4ff; border: 1px solid #2a4c7c; }
         .dmg-hybrid { background-color: #3a1c38; color: #d66bff; border: 1px solid #7c2a76; }
         .dmg-tank { background-color: #1c3a20; color: #6bff83; border: 1px solid #2a7c38; }
+        .dmg-support { background-color: #1c3a36; color: #6bffeb; border: 1px solid #2a7c73; } /* サポート用の色 */
 
-        /* ★ アイコン付きアイテムバッジのスタイル ★ */
-        .item-badge {
-            display: inline-flex;
-            align-items: center;
-            background-color: #1e282d;
-            color: #f0e6d2;
-            border: 1px solid #3c3c41;
-            padding: 2px 10px 2px 2px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-right: 6px;
-            margin-bottom: 6px;
-        }
-        .item-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 6px;
-            border: 1px solid #000;
-        }
+        .item-badge { display: inline-flex; align-items: center; background-color: #1e282d; color: #f0e6d2; border: 1px solid #3c3c41; padding: 2px 10px 2px 2px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 6px; margin-bottom: 6px; }
+        .item-icon { width: 20px; height: 20px; border-radius: 50%; margin-right: 6px; border: 1px solid #000; }
 
         .info-section { margin-bottom: 15px; }
         .info-label { color: #a09b8c; font-size: 12px; margin-bottom: 4px; display: block; font-weight: bold; }
-        .info-text { color: #f0e6d2; font-size: 14px; line-height: 1.5; margin: 0; }
+        .info-text { color: #f0e6d2; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; }
         .info-text.ult { color: #c8aa6e; font-weight: bold; }
 
-        .memo-textarea {
-            width: 100%;
-            height: 100px;
-            background: #1e282d;
-            color: #00d4ff;
-            border: 1px solid #3c3c41;
-            border-radius: 6px;
-            padding: 10px;
-            font-size: 15px;
-            font-family: inherit;
-            resize: none;
-        }
+        .skill-accordion { margin-bottom: 15px; background: #1e282d; border-radius: 6px; border: 1px solid #3c3c41; }
+        .skill-accordion summary { color: #c8aa6e; font-weight: bold; cursor: pointer; outline: none; padding: 10px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        .skill-accordion summary::-webkit-details-marker { display: none; }
+        .skill-accordion summary::after { content: "▼"; font-size: 12px; }
+        .skill-accordion[open] summary::after { content: "▲"; }
+        .skill-content { padding: 0 10px 10px 10px; border-top: 1px dashed #3c3c41; margin-top: 5px; padding-top: 10px; }
+
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin-bottom: 15px; border-radius: 6px; border: 1px solid #3c3c41; }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        .memo-textarea { width: 100%; height: 100px; background: #1e282d; color: #00d4ff; border: 1px solid #3c3c41; border-radius: 6px; padding: 10px; font-size: 15px; font-family: inherit; resize: none; }
         .memo-textarea:focus { outline: none; border-color: #00d4ff; }
         
         .empty-state { text-align: center; color: #666; margin-top: 40px; font-size: 14px; }
@@ -233,7 +111,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // ▼▼▼ Firebaseの設定情報（ご自身のものに置き換えてください） ▼▼▼
+    // ユーザー指定のFirebase設定情報
     const firebaseConfig = {
         apiKey: "AIzaSyA2TcDboCe_vdW622zEtG15-zkYj3ePjN4",
         authDomain: "lol-memo-app.firebaseapp.com",
@@ -242,7 +120,6 @@
         messagingSenderId: "389241235779",
         appId: "1:389241235779:web:62e345a781bd0c3831a7f6"
     };
-    // ▲▲▲ ここまで ▲▲▲
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -254,38 +131,15 @@
     const D_DRAGON_ITEM_URL = "https://ddragon.leagueoflegends.com/cdn/14.13.1/img/item/";
     const roleFiles = ['tanks.json', 'fighters.json', 'mages.json', 'assassins.json', 'marksmen.json', 'supports.json', 'extras.json'];
 
-    // ★ 日本語のアイテム名をRiot公式のアイテムIDに変換する辞書 ★
     const ITEM_MAP = {
-        "ゾーニャの砂時計": "3157",
-        "バンシーヴェール": "3102",
-        "マーキュリーブーツ": "3111",
-        "プレートスチールキャップ": "3047",
-        "モレロノミコン": "3165",
-        "モータルリマインダー": "3033",
-        "ブランブルベスト": "3076",
-        "ソーンメイル": "3075",
-        "ケミパンクチェーンソード": "6609",
-        "エッジ・オブ・ナイト": "3814",
-        "マルモティウスの胃袋": "3156",
-        "水銀のサッシュ": "3140",
-        "ミカエルの祝福": "3222",
-        "ドミニクリガード": "3036",
-        "ヴォイドスタッフ": "3135",
-        "ブラッククリーバー": "3071",
-        "ルインドキング・ブレード": "3153",
-        "ライアンドリーの仮面": "3151",
-        "フローズンハート": "3110",
-        "ランデュイン・オーメン": "3143",
-        "フォース・オブ・ネイチャー": "4401",
-        "サーペントファング": "6695",
-        "ガーディアンエンジェル": "3026",
-        "デスダンス": "6333",
-        "アイスボーンガントレット": "6662",
-        "オラクルレンズ": "3364",
-        "コントロールワード": "2055",
-        "アンブラルグレイブ": "3179",
-        "忘却のオーブ": "3916",
-        "ストップウォッチ": "2420"
+        "ゾーニャの砂時計": "3157", "バンシーヴェール": "3102", "マーキュリーブーツ": "3111", "プレートスチールキャップ": "3047",
+        "モレロノミコン": "3165", "モータルリマインダー": "3033", "ブランブルベスト": "3076", "ソーンメイル": "3075",
+        "ケミパンクチェーンソード": "6609", "エッジ・オブ・ナイト": "3814", "マルモティウスの胃袋": "3156",
+        "水銀のサッシュ": "3140", "ミカエルの祝福": "3222", "ドミニクリガード": "3036", "ヴォイドスタッフ": "3135",
+        "ブラッククリーバー": "3071", "ルインドキング・ブレード": "3153", "ライアンドリーの仮面": "3151",
+        "フローズンハート": "3110", "ランデュイン・オーメン": "3143", "フォース・オブ・ネイチャー": "4401",
+        "サーペントファング": "6695", "ガーディアンエンジェル": "3026", "デスダンス": "6333", "アイスボーンガントレット": "6662",
+        "オラクルレンズ": "3364", "コントロールワード": "2055", "アンブラルグレイブ": "3179", "忘却のオーブ": "3916", "ストップウォッチ": "2420"
     };
 
     async function init() {
@@ -407,24 +261,10 @@
         activeChamp = champ;
         const detailArea = document.getElementById('detail-area');
         const roleText = champ.role ? champ.role : '未設定';
-        
-        // ★ AD/APバッジの自動振り分け用ロジック ★
-        let dmgBadgeHtml = "";
-        if (champ.damage_type) {
-            // JSONに damage_type が設定されている場合
-            const type = champ.damage_type.toUpperCase();
-            let badgeClass = "dmg-hybrid";
-            if (type === "AD") badgeClass = "dmg-ad";
-            if (type === "AP") badgeClass = "dmg-ap";
-            if (type === "TANK") badgeClass = "dmg-tank";
-            dmgBadgeHtml = `<span class="dmg-badge ${badgeClass}">${champ.damage_type}</span>`;
-        }
 
-        // ★ アイコン付きアイテムバッジの生成 ★
         const counterItemsHtml = (champ.counter_items && champ.counter_items.length > 0)
             ? champ.counter_items.map(item => {
                 const itemId = ITEM_MAP[item];
-                // 辞書にIDが存在すればアイコン付き、なければ文字だけのバッジを出力
                 if (itemId) {
                     return `<span class="item-badge"><img src="${D_DRAGON_ITEM_URL}${itemId}.png" class="item-icon" alt="${item}"> ${item}</span>`;
                 } else {
@@ -433,16 +273,26 @@
             }).join('')
             : '<span style="color: #666; font-size: 12px;">未設定</span>';
 
+        const opggUrl = `https://www.op.gg/champions/${champ.id.toLowerCase().replace(/[^a-z0-9]/g, '')}/build`;
+
+        const videoHtml = champ.youtube_id 
+            ? `<div class="video-container"><iframe src="https://www.youtube.com/embed/${champ.youtube_id}" frameborder="0" allowfullscreen></iframe></div>`
+            : '';
+
         let localMemo = localStorage.getItem(`lol_memo_${champ.id}`) || champ.my_notes || "";
 
+        // APIデータ取得完了後にバッジを挿入するための空の<span>（id="title-badge-area-..."）を配置
         detailArea.innerHTML = `
             <div class="detail-header">
                 <div>
                     <h2 class="detail-title">
                         ${champ.name}
-                        ${dmgBadgeHtml}
+                        <span id="title-badge-area-${champ.id}"></span>
                     </h2>
-                    <span class="role-text">${roleText}</span>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                        <span class="role-text">${roleText}</span>
+                        <a href="${opggUrl}" target="_blank" class="btn btn-opgg">OP.GG</a>
+                    </div>
                 </div>
                 <button onclick="removeChampion('${champ.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">外す</button>
             </div>
@@ -452,15 +302,31 @@
                 <div>${counterItemsHtml}</div>
             </div>
 
+            ${videoHtml}
+
             <div class="info-section">
                 <span class="info-label">Ult効果</span>
                 <p class="info-text ult">${champ.ult_effect}</p>
             </div>
-
+            
             <div class="info-section">
                 <span class="info-label">コンボ</span>
                 <p class="info-text">${champ.combos.join('<br>')}</p>
             </div>
+
+            <details class="skill-accordion">
+                <summary id="skill-summary-${champ.id}">全スキル詳細 (公式データ取得中...)</summary>
+                <div class="skill-content">
+                    <span class="info-label">パッシブ</span>
+                    <p class="info-text" id="passive-${champ.id}">...</p>
+                    <span class="info-label">Q</span>
+                    <p class="info-text" id="q-${champ.id}">...</p>
+                    <span class="info-label">W</span>
+                    <p class="info-text" id="w-${champ.id}">...</p>
+                    <span class="info-label">E</span>
+                    <p class="info-text" id="e-${champ.id}">...</p>
+                </div>
+            </details>
 
             <div class="info-section">
                 <span class="info-label">メモ (自動同期中...)</span>
@@ -469,23 +335,75 @@
         `;
 
         fetchMemoFromFirebase(champ.id);
-    }
 
-    async function fetchMemoFromFirebase(champId) {
-        try {
-            const docRef = doc(db, "memos", champId);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                const firebaseText = docSnap.data().text;
-                const textarea = document.getElementById(`memo-${champId}`);
-                if (textarea && textarea.value !== firebaseText) {
-                    textarea.value = firebaseText;
-                    localStorage.setItem(`lol_memo_${champId}`, firebaseText);
+        const championDetailUrl = `https://ddragon.leagueoflegends.com/cdn/14.13.1/data/ja_JP/champion/${champ.id}.json`;
+        
+        fetch(championDetailUrl)
+            .then(res => res.json())
+            .then(data => {
+                const official = data.data[champ.id];
+
+                // ★ ダメージタイプ / ロールの自動判定ロジック ★
+                let dmgType = champ.damage_type; // 1. JSONに手書きがあればそれを優先
+                
+                if (!dmgType) {
+                    const tags = official.tags || [];
+                    const info = official.info || {};
+                    
+                    if (tags.includes("Support")) {
+                        dmgType = "SUPPORT";
+                    } else if (tags.includes("Tank")) {
+                        dmgType = "TANK";
+                    } else {
+                        // SupportでもTankでもない場合は、公式のパラメーター(Magic vs Attack)を比較して判定
+                        const attack = info.attack || 0;
+                        const magic = info.magic || 0;
+                        
+                        // 差が1以内の場合はハイブリッドと判定
+                        if (Math.abs(attack - magic) <= 1) {
+                            dmgType = "HYBRID";
+                        } else if (magic > attack) {
+                            dmgType = "AP";
+                        } else {
+                            dmgType = "AD";
+                        }
+                    }
                 }
-            }
-        } catch (error) {
-            console.error("Firebase取得エラー:", error);
-        }
+
+                // バッジのHTML生成と挿入
+                if (dmgType) {
+                    const typeUpper = dmgType.toUpperCase();
+                    let badgeClass = "dmg-hybrid";
+                    if (typeUpper === "AD") badgeClass = "dmg-ad";
+                    else if (typeUpper === "AP") badgeClass = "dmg-ap";
+                    else if (typeUpper === "TANK") badgeClass = "dmg-tank";
+                    else if (typeUpper === "SUPPORT") badgeClass = "dmg-support";
+                    
+                    document.getElementById(`title-badge-area-${champ.id}`).innerHTML = 
+                        `<span class="dmg-badge ${badgeClass}">${typeUpper}</span>`;
+                }
+
+                // スキルテキストのクリーンアップと流し込み
+                const cleanText = (text) => text.replace(/<(?!\/?br\/?>)[^>]+>/g, "");
+
+                document.getElementById(`passive-${champ.id}`).innerHTML = 
+                    `<strong style="color: #c8aa6e;">${official.passive.name}：</strong><br>${cleanText(official.passive.description)}`;
+                
+                document.getElementById(`q-${champ.id}`).innerHTML = 
+                    `<strong style="color: #c8aa6e;">${official.spells[0].name}：</strong><br>${cleanText(official.spells[0].description)}`;
+                
+                document.getElementById(`w-${champ.id}`).innerHTML = 
+                    `<strong style="color: #c8aa6e;">${official.spells[1].name}：</strong><br>${cleanText(official.spells[1].description)}`;
+                
+                document.getElementById(`e-${champ.id}`).innerHTML = 
+                    `<strong style="color: #c8aa6e;">${official.spells[2].name}：</strong><br>${cleanText(official.spells[2].description)}`;
+                
+                document.getElementById(`skill-summary-${champ.id}`).textContent = "全スキル詳細 (タップで開く)";
+            })
+            .catch(err => {
+                console.error("スキルデータの取得に失敗しました", err);
+                document.getElementById(`skill-summary-${champ.id}`).textContent = "⚠️ スキルデータの取得に失敗しました";
+            });
     }
 
     let typingTimer;
