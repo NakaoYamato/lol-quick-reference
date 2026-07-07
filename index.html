@@ -5,38 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LoL 早見表 (DB管理版)</title>
     
+    <link rel="icon" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: #010a13; color: #f0e6d2; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
         
-        .app-container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100vh; }
+        .app-container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100vh; position: relative; }
         .top-section { padding: 15px 15px 10px 15px; background-color: #010a13; z-index: 200; }
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        h1 { color: #c8aa6e; font-size: 18px; margin: 0; }
+        .header-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+        
+        h1 { color: #c8aa6e; font-size: 18px; margin: 0; display: flex; align-items: baseline; }
+        .version-text { font-size: 11px; color: #a09b8c; font-weight: normal; margin-left: 8px; }
         
         .search-row { position: relative; display: flex; gap: 8px; }
         #search-input { flex-grow: 1; padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #3c3c41; background: #1e282d; color: #fff; outline: none; }
         #search-input:focus { border-color: #c8aa6e; }
 
-        .btn { padding: 10px 14px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; border: 1px solid; white-space: nowrap; text-decoration: none; display: inline-block; text-align: center; }
+        .btn { padding: 10px 14px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; border: 1px solid; white-space: nowrap; display: inline-block; text-align: center; }
         .btn-primary { background-color: #1e282d; color: #c8aa6e; border-color: #c8aa6e; }
         .btn-danger { background-color: transparent; color: #ff4c4c; border-color: #ff4c4c; }
-        .btn-opgg { background-color: #5383e8; color: #fff; border-color: #5383e8; padding: 4px 10px; font-size: 12px; border-radius: 4px; }
-        .btn-edit { background-color: #2a3c46; color: #00d4ff; border-color: #00d4ff; padding: 4px 10px; font-size: 12px; border-radius: 4px; margin-left: auto; }
+        .btn-opgg { background-color: #5383e8; color: #fff; border-color: #5383e8; padding: 4px 10px; font-size: 12px; border-radius: 4px; text-decoration: none; }
+        .btn-edit { background-color: #2a3c46; color: #00d4ff; border-color: #00d4ff; padding: 4px 10px; font-size: 11px; border-radius: 4px; }
 
-        .suggestion-box { position: absolute; top: calc(100% + 4px); left: 0; width: calc(100% - 60px); max-height: 250px; overflow-y: auto; background-color: #111a21; border: 1px solid #c8aa6e; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 1000; display: none; flex-direction: column; }
+        .suggestion-box { position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 250px; overflow-y: auto; background-color: #111a21; border: 1px solid #c8aa6e; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 1000; display: none; flex-direction: column; }
         .suggestion-item { padding: 12px 15px; border-bottom: 1px solid #3c3c41; color: #f0e6d2; font-size: 16px; cursor: pointer; text-align: left; }
         .suggestion-item:last-child { border-bottom: none; }
 
-        .sticky-team-bar { position: sticky; top: 0; z-index: 100; background-color: #010a13; border-bottom: 2px solid #3c3c41; padding: 10px 15px; display: flex; justify-content: center; gap: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
-        .champ-slot { width: 50px; height: 50px; border-radius: 50%; background-color: #111a21; border: 2px dashed #3c3c41; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: 0.2s; }
+        .sticky-team-bar { position: sticky; top: 0; z-index: 100; background-color: #010a13; border-bottom: 2px solid #3c3c41; padding: 8px 15px; display: flex; align-items: flex-end; gap: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+        .team-group { display: flex; flex-direction: column; align-items: center; }
+        .group-label { font-size: 10px; font-weight: bold; margin-bottom: 4px; }
+        .slots-container { display: flex; gap: 8px; }
+        
+        .champ-slot { width: 42px; height: 42px; border-radius: 50%; background-color: #111a21; border: 2px dashed #3c3c41; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: 0.2s; }
         .champ-slot img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #1e282d; }
-        .champ-slot.active { border-color: #c8aa6e; transform: scale(1.1); }
+        .champ-slot.active { border-color: #c8aa6e; transform: scale(1.1); z-index: 10; }
         .champ-slot.active img { border-color: #c8aa6e; box-shadow: 0 0 10px rgba(200, 170, 110, 0.6); }
 
         .detail-area { flex-grow: 1; padding: 15px; background-color: #111a21; }
         .detail-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #3c3c41; padding-bottom: 8px; margin-bottom: 15px; }
-        .detail-title { margin: 0; color: #c8aa6e; font-size: 22px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;}
+        .detail-title { margin: 0; color: #c8aa6e; font-size: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;}
         .role-text { color: #a09b8c; font-size: 12px; }
         
         .dmg-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
@@ -46,31 +55,44 @@
         .dmg-tank { background-color: #1c3a20; color: #6bff83; border: 1px solid #2a7c38; }
         .dmg-support { background-color: #1c3a36; color: #6bffeb; border: 1px solid #2a7c73; }
 
-        .item-badge { display: inline-flex; align-items: center; background-color: #1e282d; color: #f0e6d2; border: 1px solid #3c3c41; padding: 2px 10px 2px 2px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 6px; margin-bottom: 6px; }
+        .item-badge { display: inline-flex; align-items: center; background-color: #1e282d; color: #f0e6d2; border: 1px solid #3c3c41; padding: 2px 10px 2px 2px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 6px; margin-bottom: 6px; cursor: pointer; transition: 0.2s; }
+        .item-badge:hover, .item-badge:active { border-color: #c8aa6e; background-color: #2a3c46; }
         .item-icon { width: 20px; height: 20px; border-radius: 50%; margin-right: 6px; border: 1px solid #000; }
 
         .info-section { margin-bottom: 15px; }
         .info-label { color: #a09b8c; font-size: 12px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; }
         .info-text { color: #f0e6d2; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; }
-        .info-text.ult { color: #c8aa6e; font-weight: bold; }
         .cd-text { color: #00d4ff; font-size: 11px; margin-left: 8px; font-weight: normal; }
 
-        .skill-accordion { margin-bottom: 15px; background: #1e282d; border-radius: 6px; border: 1px solid #3c3c41; }
-        .skill-accordion summary { color: #c8aa6e; font-weight: bold; cursor: pointer; outline: none; padding: 10px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
-        .skill-accordion summary::-webkit-details-marker { display: none; }
-        .skill-accordion summary::after { content: "▼"; font-size: 12px; }
-        .skill-accordion[open] summary::after { content: "▲"; }
-        .skill-content { padding: 0 10px 10px 10px; border-top: 1px dashed #3c3c41; margin-top: 5px; padding-top: 10px; }
+        /* ★ スキルタブUIのスタイル ★ */
+        .skill-tabs-container { margin-bottom: 15px; background: #1e282d; border-radius: 6px; border: 1px solid #3c3c41; overflow: hidden; }
+        .skill-icons-row { display: flex; justify-content: space-around; background: #111a21; padding: 12px 10px; border-bottom: 1px solid #3c3c41; }
+        .skill-icon-wrapper { position: relative; width: 44px; height: 44px; cursor: pointer; border-radius: 4px; border: 2px solid transparent; transition: 0.2s; }
+        .skill-icon-wrapper.active { border-color: #c8aa6e; transform: scale(1.1); box-shadow: 0 0 8px rgba(200, 170, 110, 0.5); }
+        .skill-icon-wrapper img { width: 100%; height: 100%; border-radius: 2px; object-fit: cover; }
+        .skill-key-label { position: absolute; bottom: -8px; right: -8px; background: #c8aa6e; color: #000; font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 4px; z-index: 2; }
+        
+        .skill-content-area { padding: 15px; display: none; }
+        .skill-content-area.active { display: block; }
+        .skill-video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 4px; overflow: hidden; border: 1px solid #3c3c41; background: #000; }
+        .skill-video-wrapper video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin-bottom: 15px; border-radius: 6px; border: 1px solid #3c3c41; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* 編集モード用のスタイル */
         .edit-input { width: 100%; background: #1e282d; color: #fff; border: 1px solid #00d4ff; border-radius: 4px; padding: 6px; margin-bottom: 8px; font-size: 14px; font-family: inherit; }
         .memo-textarea { width: 100%; height: 100px; background: #1e282d; color: #00d4ff; border: 1px solid #3c3c41; border-radius: 6px; padding: 10px; font-size: 15px; font-family: inherit; resize: none; }
         .memo-textarea:focus { outline: none; border-color: #00d4ff; }
         
         .empty-state { text-align: center; color: #666; margin-top: 40px; font-size: 14px; }
+
+        /* ★ アイテム詳細用ポップアップ（モーダル）のスタイル ★ */
+        #item-modal { display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; padding: 20px; }
+        .item-modal-content { background: #111a21; border: 1px solid #c8aa6e; border-radius: 8px; width: 100%; max-width: 350px; padding: 20px; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+        .item-modal-close { position: absolute; top: 10px; right: 15px; color: #a09b8c; font-size: 26px; cursor: pointer; }
+        .item-modal-title { display: flex; align-items: center; gap: 10px; color: #c8aa6e; margin-top: 0; font-size: 18px; margin-bottom: 5px; }
+        .item-modal-price { color: #ffeb3b; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
+        .item-modal-desc { color: #f0e6d2; font-size: 14px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -78,23 +100,41 @@
 <div class="app-container">
     <div class="top-section">
         <div class="header-row">
-            <h1>LoL Quick Reference</h1>
-            <button onclick="resetTeam()" class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;">全クリア</button>
+            <h1>LoL Quick Reference <span id="patch-version" class="version-text">v--</span></h1>
+            <button onclick="resetTeam()" class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;">敵を全クリア</button>
         </div>
         <div class="search-row">
-            <input type="text" id="search-input" placeholder="キャラ名を入力..." autocomplete="off">
+            <input type="text" id="search-input" placeholder="キャラ名を入力 (タップで追加)..." autocomplete="off">
             <div id="suggestion-box" class="suggestion-box"></div>
         </div>
     </div>
 
-    <div class="sticky-team-bar" id="selected-team">
-        <div class="champ-slot"></div><div class="champ-slot"></div><div class="champ-slot"></div><div class="champ-slot"></div><div class="champ-slot"></div>
+    <div class="sticky-team-bar">
+        <div class="team-group">
+            <span class="group-label" style="color: #00d4ff;">自キャラ</span>
+            <div id="my-champ-slot" class="champ-slot" style="border-color: #3c3c41;"></div>
+        </div>
+        <div style="width: 1px; background: #3c3c41; align-self: stretch; margin: 0 4px;"></div>
+        <div class="team-group">
+            <span class="group-label" style="color: #ff4c4c;">敵チーム</span>
+            <div class="slots-container" id="selected-team">
+                <div class="champ-slot"></div><div class="champ-slot"></div><div class="champ-slot"></div><div class="champ-slot"></div><div class="champ-slot"></div>
+            </div>
+        </div>
     </div>
 
     <div class="detail-area" id="detail-area">
-        <div class="empty-state">
-            👆 データをロード中...<br>(初回はRiot公式から全キャラ情報を取得します)
-        </div>
+        <div class="empty-state">👆 データをロード中...<br>(初回はRiot公式から全キャラ情報を取得します)</div>
+    </div>
+</div>
+
+<!-- ★ アイテム詳細表示用のポップアップ ★ -->
+<div id="item-modal" onclick="closeItemModal(event)">
+    <div class="item-modal-content" onclick="event.stopPropagation()">
+        <span class="item-modal-close" onclick="closeItemModal(event)">×</span>
+        <h3 id="modal-item-name" class="item-modal-title"></h3>
+        <div id="modal-item-price" class="item-modal-price"></div>
+        <div id="modal-item-desc" class="item-modal-desc"></div>
     </div>
 </div>
 
@@ -102,6 +142,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+    // ▼▼▼ Firebaseの設定情報 ▼▼▼
     const firebaseConfig = {
         apiKey: "AIzaSyA2TcDboCe_vdW622zEtG15-zkYj3ePjN4",
         authDomain: "lol-memo-app.firebaseapp.com",
@@ -114,21 +155,18 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let allChampions = []; // Riot APIから取得した全キャラリスト
+    let allChampions = [];
+    let myChampion = null; 
     let enemyTeam = [];
     let activeChamp = null; 
+    
     let ddragonVersion = "14.13.1"; 
     let D_DRAGON_URL = "";
     let D_DRAGON_ITEM_URL = "";
 
-    // ★ 現在表示しているキャラのカスタムデータ（Firebaseから取得）
-    let currentCustomData = {
-        counter_items: "",
-        combos: "",
-        youtube_id: "",
-        damage_type: "",
-        text: ""
-    };
+    // ★ 全アイテムの公式データを格納する変数
+    let allItemsDict = {};
+    let currentCustomData = { counter_items: "", combos: "", youtube_id: "", damage_type: "", text: "" };
 
     const ITEM_MAP = {
         "ゾーニャの砂時計": "3157", "バンシーヴェール": "3102", "マーキュリーブーツ": "3111", "プレートスチールキャップ": "3047",
@@ -141,42 +179,37 @@
         "オラクルレンズ": "3364", "コントロールワード": "2055", "アンブラルグレイブ": "3179", "忘却のオーブ": "3916", "ストップウォッチ": "2420"
     };
 
-    // ロールタグを日本語化する辞書
-    const ROLE_MAP = {
-        "Fighter": "ファイター", "Tank": "タンク", "Mage": "メイジ", 
-        "Assassin": "アサシン", "Marksman": "マークスマン", "Support": "サポート"
-    };
+    const ROLE_MAP = { "Fighter": "ファイター", "Tank": "タンク", "Mage": "メイジ", "Assassin": "アサシン", "Marksman": "マークスマン", "Support": "サポート" };
 
     async function init() {
         try {
-            // 1. 最新バージョンの取得
             const versionRes = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
             const versions = await versionRes.json();
             ddragonVersion = versions[0]; 
+            
+            document.getElementById('patch-version').textContent = `(v${ddragonVersion})`;
             D_DRAGON_URL = `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/champion/`;
             D_DRAGON_ITEM_URL = `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/item/`;
 
-            // 2. 公式の全チャンピオンリストを取得（旧JSONファイルは不要に！）
+            // ★ 公式アイテムデータの取得（金額や効果用）
+            const itemRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/ja_JP/item.json`);
+            const itemJson = await itemRes.json();
+            allItemsDict = itemJson.data;
+
             const champListRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/ja_JP/champion.json`);
             const champListData = await champListRes.json();
             
-            // オブジェクトから配列に変換し、必要なデータを整形
             allChampions = Object.values(champListData.data).map(champ => {
                 const roles = champ.tags.map(t => ROLE_MAP[t] || t).join(" / ");
-                return {
-                    id: champ.id,
-                    name: champ.name,
-                    role: roles,
-                    tags: champ.tags,
-                    info: champ.info
-                };
+                // ★ key（0001のような数字ID）を保持（公式動画取得に必要）
+                return { id: champ.id, key: champ.key, name: champ.name, role: roles, tags: champ.tags, info: champ.info };
             });
 
-            document.getElementById('detail-area').innerHTML = '<div class="empty-state">👆 上の検索欄から敵チームのキャラを追加してください</div>';
+            document.getElementById('detail-area').innerHTML = '<div class="empty-state">👆 検索欄からキャラを追加して、自キャラ・敵チームに設定してください</div>';
             renderTeam();
         } catch (error) {
             console.error("初期化失敗", error);
-            document.getElementById('detail-area').innerHTML = '<div class="empty-state">⚠️ データの取得に失敗しました。リロードしてください。</div>';
+            document.getElementById('detail-area').innerHTML = '<div class="empty-state">⚠️ データの取得に失敗しました。</div>';
         }
     }
 
@@ -198,12 +231,9 @@
     function showSuggestions(query) {
         suggestionBox.innerHTML = ''; 
         if (!query.trim()) { suggestionBox.style.display = 'none'; return; }
-
         const normalizedQuery = normalizeString(query);
         const filteredChamps = allChampions.filter(champ => normalizeString(champ.name).includes(normalizedQuery));
-
         if (filteredChamps.length === 0) { suggestionBox.style.display = 'none'; return; }
-
         filteredChamps.forEach(champ => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'suggestion-item';
@@ -215,32 +245,61 @@
     }
 
     function addChampion(champ) {
-        if (enemyTeam.length >= 5) { alert("すでに5体選択されています。"); return; }
-        if (enemyTeam.some(c => c.id === champ.id)) {
-            inputElement.value = ''; suggestionBox.style.display = 'none'; inputElement.blur(); return;
-        }
+        if (myChampion && myChampion.id === champ.id) { closeSearchAndShowDetail(champ); return; }
+        if (enemyTeam.some(c => c.id === champ.id)) { closeSearchAndShowDetail(champ); return; }
+        if (enemyTeam.length >= 5) { alert("敵チームはすでに5体選択されています。"); return; }
         enemyTeam.push(champ);
-        inputElement.value = ''; suggestionBox.style.display = 'none'; inputElement.blur(); 
-        showDetail(champ);
-        renderTeam();
+        closeSearchAndShowDetail(champ);
     }
 
-    window.removeChampion = function(champId) {
+    function closeSearchAndShowDetail(champ) {
+        inputElement.value = ''; suggestionBox.style.display = 'none'; inputElement.blur(); 
+        showDetail(champ); renderTeam();
+    }
+
+    window.setMyChamp = function(champId) {
+        const champ = allChampions.find(c => c.id === champId);
+        myChampion = champ;
         enemyTeam = enemyTeam.filter(c => c.id !== champId);
-        if (activeChamp && activeChamp.id === champId) {
+        showDetail(champ); renderTeam();
+    }
+    window.removeMyChamp = function() {
+        myChampion = null;
+        if (activeChamp && !enemyTeam.includes(activeChamp)) {
             activeChamp = null;
             document.getElementById('detail-area').innerHTML = '<div class="empty-state">👆 キャラのアイコンをタップして詳細を表示</div>';
         }
         renderTeam();
     }
 
+    window.addChampionById = function(champId) { addChampion(allChampions.find(c => c.id === champId)); }
+    window.removeChampion = function(champId) {
+        enemyTeam = enemyTeam.filter(c => c.id !== champId);
+        if (activeChamp && activeChamp.id === champId) {
+            activeChamp = null; document.getElementById('detail-area').innerHTML = '<div class="empty-state">👆 キャラのアイコンをタップして詳細を表示</div>';
+        }
+        renderTeam();
+    }
+
     window.resetTeam = function() {
-        enemyTeam = []; activeChamp = null;
-        document.getElementById('detail-area').innerHTML = '<div class="empty-state">👆 上の検索欄から敵チームのキャラを追加してください</div>';
+        enemyTeam = []; 
+        if (activeChamp && activeChamp !== myChampion) {
+            activeChamp = null; document.getElementById('detail-area').innerHTML = '<div class="empty-state">👆 検索欄からキャラを追加して、自キャラ・敵チームに設定してください</div>';
+        }
         renderTeam();
     }
 
     function renderTeam() {
+        const mySlot = document.getElementById('my-champ-slot');
+        if (myChampion) {
+            mySlot.className = `champ-slot ${activeChamp === myChampion ? 'active' : ''}`;
+            mySlot.style.borderColor = '#00d4ff';
+            mySlot.onclick = () => { showDetail(myChampion); renderTeam(); };
+            mySlot.innerHTML = `<img src="${D_DRAGON_URL}${myChampion.id}.png" style="border-color: #00d4ff;" alt="${myChampion.name}">`;
+        } else {
+            mySlot.className = 'champ-slot'; mySlot.style.borderColor = '#3c3c41'; mySlot.onclick = null; mySlot.innerHTML = '';
+        }
+
         const teamContainer = document.getElementById('selected-team');
         teamContainer.innerHTML = ''; 
         for (let i = 0; i < 5; i++) {
@@ -255,45 +314,53 @@
         }
     }
 
-    // ★ キャラ詳細とFirebaseデータの統合表示
+    // ★ モーダル（ポップアップ）開閉処理
+    window.showItemModal = function(itemId) {
+        const data = allItemsDict[itemId];
+        if (!data) return;
+        
+        const iconUrl = `${D_DRAGON_ITEM_URL}${itemId}.png`;
+        document.getElementById('modal-item-name').innerHTML = `<img src="${iconUrl}" style="width: 24px; height: 24px; border-radius: 4px; vertical-align: middle;"> ${data.name}`;
+        document.getElementById('modal-item-price').innerHTML = `💰 価格: ${data.gold.total} Gold`;
+        
+        // Riot特有の不要なHTMLタグを除去し、brタグだけ残す
+        const cleanDesc = data.description.replace(/<(?!\/?br\/?>)[^>]+>/g, "");
+        document.getElementById('modal-item-desc').innerHTML = cleanDesc;
+        
+        document.getElementById('item-modal').style.display = 'flex';
+    }
+
+    window.closeItemModal = function(event) {
+        if (event) event.stopPropagation();
+        document.getElementById('item-modal').style.display = 'none';
+    }
+
     async function showDetail(champ) {
         activeChamp = champ;
         const detailArea = document.getElementById('detail-area');
-        
         detailArea.innerHTML = `<div class="empty-state">🔄 データを読み込み中...</div>`;
 
         try {
-            // 1. Firebaseからカスタムデータ（コンボ、アイテム等）を取得
             const docRef = doc(db, "champ_data", champ.id);
             const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-                currentCustomData = docSnap.data();
-            } else {
-                // 初めて開くキャラの場合は空データをセット
-                currentCustomData = { counter_items: "", combos: "", youtube_id: "", damage_type: "", text: "" };
-            }
+            if (docSnap.exists()) { currentCustomData = docSnap.data(); } 
+            else { currentCustomData = { counter_items: "", combos: "", youtube_id: "", damage_type: "", text: "" }; }
 
-            // 2. Riot APIから個別スキルデータ（Ult等）を取得
             const detailRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/ja_JP/champion/${champ.id}.json`);
             const detailData = await detailRes.json();
             const official = detailData.data[champ.id];
 
-            // 描画処理へ
             renderDetailHTML(champ, official);
-
         } catch (error) {
             console.error("詳細取得エラー:", error);
             detailArea.innerHTML = `<div class="empty-state">⚠️ データの取得に失敗しました</div>`;
         }
     }
 
-    // ★ 取得したデータをもとにHTMLを組み立てる
     function renderDetailHTML(champ, official) {
         const detailArea = document.getElementById('detail-area');
         const cleanText = (text) => text.replace(/<(?!\/?br\/?>)[^>]+>/g, "");
         
-        // ダメージタイプの判定（DBの手動設定を優先、なければ公式ステータスから推測）
         let dmgType = currentCustomData.damage_type; 
         if (!dmgType) {
             if (champ.tags.includes("Support")) dmgType = "SUPPORT";
@@ -315,78 +382,132 @@
         else if (typeUpper === "SUPPORT") badgeClass = "dmg-support";
         const dmgBadgeHtml = `<span class="dmg-badge ${badgeClass}">${typeUpper}</span>`;
 
-        // 対策アイテムバッジの生成（カンマ区切りテキストから配列へ）
+        // ★ 対策アイテムにクリックイベント(showItemModal)を追加
         const itemArray = currentCustomData.counter_items ? currentCustomData.counter_items.split(',').map(s => s.trim()) : [];
         const counterItemsHtml = itemArray.length > 0
             ? itemArray.map(item => {
                 const itemId = ITEM_MAP[item];
-                if (itemId) return `<span class="item-badge"><img src="${D_DRAGON_ITEM_URL}${itemId}.png" class="item-icon" alt="${item}"> ${item}</span>`;
-                else return `<span class="item-badge" style="padding: 4px 10px; border-radius: 12px; background: #2b1a1a; color: #ff6b6b; border-color: #7c2a2a;">${item}</span>`;
+                if (itemId) return `<span class="item-badge" onclick="showItemModal('${itemId}')" title="タップして詳細を表示"><img src="${D_DRAGON_ITEM_URL}${itemId}.png" class="item-icon" alt="${item}"> ${item}</span>`;
+                else return `<span class="item-badge" style="padding: 4px 10px; border-radius: 12px; background: #2b1a1a; color: #ff6b6b; border-color: #7c2a2a; cursor: default;">${item}</span>`;
             }).join('')
-            : '<span style="color: #666; font-size: 12px;">データ未登録 (編集ボタンから追加できます)</span>';
+            : '<span style="color: #666; font-size: 12px;">データ未登録</span>';
 
-        // コンボの生成
         const combosHtml = currentCustomData.combos 
-            ? currentCustomData.combos.split('\n').join('<br>')
-            : '<span style="color: #666;">データ未登録</span>';
-
+            ? currentCustomData.combos.split('\n').join('<br>') : '<span style="color: #666;">データ未登録</span>';
+        
         const opggUrl = `https://www.op.gg/champions/${champ.id.toLowerCase().replace(/[^a-z0-9]/g, '')}/build`;
-        const videoHtml = currentCustomData.youtube_id 
-            ? `<div class="video-container"><iframe src="https://www.youtube.com/embed/${currentCustomData.youtube_id}" frameborder="0" allowfullscreen></iframe></div>` : '';
+        
+        // ★ ユーザー設定のYouTube動画（Ult欄に表示）
+        const youtubeHtml = currentCustomData.youtube_id 
+            ? `<div class="video-container" style="margin-top:10px;"><iframe src="https://www.youtube.com/embed/${currentCustomData.youtube_id}" frameborder="0" allowfullscreen></iframe></div>` : '';
 
-        // Ult情報の抽出（Riot APIの spells[3]）
-        const ultInfo = official.spells[3];
-        const ultText = `<strong style="color: #c8aa6e;">R: ${ultInfo.name}</strong> <span class="cd-text">[CD: ${ultInfo.cooldownBurn}秒]</span><br>${cleanText(ultInfo.description)}`;
+        // ★ スキルタブUIの構築 ★
+        const pIcon = `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/passive/${official.passive.image.full}`;
+        const qIcon = `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/spell/${official.spells[0].image.full}`;
+        const wIcon = `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/spell/${official.spells[1].image.full}`;
+        const eIcon = `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/spell/${official.spells[2].image.full}`;
+        const rIcon = `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/spell/${official.spells[3].image.full}`;
+
+        // 4桁のキー番号を作成（公式の動画URL用）
+        const padKey = String(champ.key).padStart(4, '0');
+
+        // タブの中身を作成する関数
+        const createTabHtml = (keyName, name, cd, desc, videoKey, isActive) => {
+            const videoUrl = `https://d28xe8vt774jo5.cloudfront.net/champion-abilities/${padKey}/ability_${padKey}_${videoKey}1.webm`;
+            return `
+            <div id="tab-content-${champ.id}-${keyName}" class="skill-content-area ${isActive ? 'active' : ''}">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+                    <strong style="color: #c8aa6e; font-size:16px;">${name}</strong>
+                    ${cd ? `<span class="cd-text">[CD: ${cd}秒]</span>` : ''}
+                </div>
+                <p class="info-text">${cleanText(desc)}</p>
+                <!-- ★ Riot公式の動画プレビュー (エラー時は非表示) -->
+                <div class="skill-video-wrapper">
+                    <video src="${videoUrl}" autoplay loop muted playsinline onerror="this.parentElement.style.display='none'"></video>
+                </div>
+            </div>`;
+        };
+
+        const isMyChamp = (myChampion && myChampion.id === champ.id);
+        const isEnemy = enemyTeam.some(c => c.id === champ.id);
+
+        let buttonHtml = `<div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end;">
+            <button onclick="toggleEditMode('${champ.id}')" class="btn btn-edit">✍️ DB編集</button>
+            <div style="display: flex; gap: 6px;">`;
+        if (isMyChamp) buttonHtml += `<button onclick="removeMyChamp()" class="btn" style="padding: 4px 8px; font-size: 11px; border-color: #00d4ff; color: #00d4ff; background: transparent;">自キャラ解除</button>`;
+        else buttonHtml += `<button onclick="setMyChamp('${champ.id}')" class="btn" style="padding: 4px 8px; font-size: 11px; background: #1e282d; color: #00d4ff; border-color: #00d4ff;">自キャラ設定</button>`;
+        if (isEnemy) buttonHtml += `<button onclick="removeChampion('${champ.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;">敵から外す</button>`;
+        else if (!isMyChamp) buttonHtml += `<button onclick="addChampionById('${champ.id}')" class="btn" style="padding: 4px 8px; font-size: 11px; background: #1e282d; color: #ff4c4c; border-color: #ff4c4c;">敵に追加</button>`;
+        buttonHtml += `</div></div>`;
 
         detailArea.innerHTML = `
             <div class="detail-header">
-                <div>
+                <div style="flex-grow: 1;">
                     <h2 class="detail-title">${champ.name} ${dmgBadgeHtml}</h2>
                     <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
                         <span class="role-text">${champ.role}</span>
                         <a href="${opggUrl}" target="_blank" class="btn btn-opgg">OP.GG</a>
                     </div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button onclick="removeChampion('${champ.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">外す</button>
-                    <button onclick="toggleEditMode('${champ.id}')" class="btn btn-edit">✍️ DB編集</button>
+                ${buttonHtml}
+            </div>
+
+            <!-- ★ 表示モード ★ -->
+            <div id="view-mode-${champ.id}">
+                <div class="info-section">
+                    <span class="info-label">対策アイテム <span style="font-size:10px; color:#666; font-weight:normal;">(タップで詳細)</span></span>
+                    <div>${counterItemsHtml}</div>
+                </div>
+                
+                ${currentCustomData.youtube_id ? `
+                <div class="info-section">
+                    <span class="info-label">Ult・コンボ動画 (YouTube)</span>
+                    ${youtubeHtml}
+                </div>` : ''}
+
+                <div class="info-section"><span class="info-label">コンボ</span><p class="info-text">${combosHtml}</p></div>
+                
+                <!-- ★ 全スキル詳細 (タブUI) ★ -->
+                <div class="info-section">
+                    <span class="info-label">全スキル詳細</span>
+                    <div class="skill-tabs-container">
+                        <div class="skill-icons-row">
+                            <div class="skill-icon-wrapper active" id="tab-icon-${champ.id}-P" onclick="switchSkillTab('${champ.id}', 'P')">
+                                <img src="${pIcon}"> <span class="skill-key-label">P</span>
+                            </div>
+                            <div class="skill-icon-wrapper" id="tab-icon-${champ.id}-Q" onclick="switchSkillTab('${champ.id}', 'Q')">
+                                <img src="${qIcon}"> <span class="skill-key-label">Q</span>
+                            </div>
+                            <div class="skill-icon-wrapper" id="tab-icon-${champ.id}-W" onclick="switchSkillTab('${champ.id}', 'W')">
+                                <img src="${wIcon}"> <span class="skill-key-label">W</span>
+                            </div>
+                            <div class="skill-icon-wrapper" id="tab-icon-${champ.id}-E" onclick="switchSkillTab('${champ.id}', 'E')">
+                                <img src="${eIcon}"> <span class="skill-key-label">E</span>
+                            </div>
+                            <div class="skill-icon-wrapper" id="tab-icon-${champ.id}-R" onclick="switchSkillTab('${champ.id}', 'R')">
+                                <img src="${rIcon}"> <span class="skill-key-label">R</span>
+                            </div>
+                        </div>
+                        ${createTabHtml('P', official.passive.name, null, official.passive.description, 'P', true)}
+                        ${createTabHtml('Q', official.spells[0].name, official.spells[0].cooldownBurn, official.spells[0].description, 'Q', false)}
+                        ${createTabHtml('W', official.spells[1].name, official.spells[1].cooldownBurn, official.spells[1].description, 'W', false)}
+                        ${createTabHtml('E', official.spells[2].name, official.spells[2].cooldownBurn, official.spells[2].description, 'E', false)}
+                        ${createTabHtml('R', official.spells[3].name, official.spells[3].cooldownBurn, official.spells[3].description, 'R', false)}
+                    </div>
                 </div>
             </div>
 
-            <div id="view-mode-${champ.id}">
-                <div class="info-section"><span class="info-label">対策アイテム</span><div>${counterItemsHtml}</div></div>
-                ${videoHtml}
-                <div class="info-section"><span class="info-label">Ult効果</span><p class="info-text ult">${ultText}</p></div>
-                <div class="info-section"><span class="info-label">コンボ</span><p class="info-text">${combosHtml}</p></div>
-            </div>
-
+            <!-- 編集モード -->
             <div id="edit-mode-${champ.id}" style="display: none; background: #111a21; padding: 10px; border: 1px dashed #00d4ff; border-radius: 6px; margin-bottom: 15px;">
                 <h3 style="color: #00d4ff; font-size: 14px; margin-top: 0;">データベース編集</h3>
                 <span class="info-label">対策アイテム (カンマ区切りで入力)</span>
                 <input type="text" id="edit-items-${champ.id}" class="edit-input" placeholder="例: ゾーニャの砂時計, バンシーヴェール" value="${currentCustomData.counter_items || ''}">
-                
                 <span class="info-label">コンボ (改行で複数登録)</span>
                 <textarea id="edit-combos-${champ.id}" class="edit-input" style="height: 60px;">${currentCustomData.combos || ''}</textarea>
-                
                 <span class="info-label">YouTube 動画ID (v=の後ろの英数字)</span>
                 <input type="text" id="edit-youtube-${champ.id}" class="edit-input" placeholder="例: dQw4w9WgXcQ" value="${currentCustomData.youtube_id || ''}">
-                
                 <button onclick="saveCustomData('${champ.id}')" class="btn btn-primary" style="width: 100%; margin-top: 8px;">データベースに保存</button>
             </div>
-
-            <details class="skill-accordion">
-                <summary>全スキル詳細 (タップで開く)</summary>
-                <div class="skill-content">
-                    <span class="info-label">パッシブ</span>
-                    <p class="info-text"><strong style="color: #c8aa6e;">${official.passive.name}</strong>：<br>${cleanText(official.passive.description)}</p>
-                    <span class="info-label">Q</span>
-                    <p class="info-text"><strong style="color: #c8aa6e;">${official.spells[0].name}</strong> <span class="cd-text">[CD: ${official.spells[0].cooldownBurn}秒]</span><br>${cleanText(official.spells[0].description)}</p>
-                    <span class="info-label">W</span>
-                    <p class="info-text"><strong style="color: #c8aa6e;">${official.spells[1].name}</strong> <span class="cd-text">[CD: ${official.spells[1].cooldownBurn}秒]</span><br>${cleanText(official.spells[1].description)}</p>
-                    <span class="info-label">E</span>
-                    <p class="info-text"><strong style="color: #c8aa6e;">${official.spells[2].name}</strong> <span class="cd-text">[CD: ${official.spells[2].cooldownBurn}秒]</span><br>${cleanText(official.spells[2].description)}</p>
-                </div>
-            </details>
 
             <div class="info-section">
                 <span class="info-label">メモ <span id="memo-status-${champ.id}" style="color: #666; font-weight: normal;"></span></span>
@@ -395,47 +516,51 @@
         `;
     }
 
-    // ★ 編集モードの切り替え
+    // ★ スキルタブ切り替え機能
+    window.switchSkillTab = function(champId, targetKey) {
+        const keys = ['P', 'Q', 'W', 'E', 'R'];
+        keys.forEach(k => {
+            const icon = document.getElementById(`tab-icon-${champId}-${k}`);
+            const content = document.getElementById(`tab-content-${champId}-${k}`);
+            if (icon && content) {
+                if (k === targetKey) {
+                    icon.classList.add('active');
+                    content.classList.add('active');
+                } else {
+                    icon.classList.remove('active');
+                    content.classList.remove('active');
+                }
+            }
+        });
+    }
+
     window.toggleEditMode = function(champId) {
         const viewDiv = document.getElementById(`view-mode-${champId}`);
         const editDiv = document.getElementById(`edit-mode-${champId}`);
         if (editDiv.style.display === 'none') {
-            viewDiv.style.display = 'none';
-            editDiv.style.display = 'block';
+            viewDiv.style.display = 'none'; editDiv.style.display = 'block';
         } else {
-            viewDiv.style.display = 'block';
-            editDiv.style.display = 'none';
+            viewDiv.style.display = 'block'; editDiv.style.display = 'none';
         }
     }
 
-    // ★ Firebaseに独自データを保存する処理
     window.saveCustomData = async function(champId) {
         const items = document.getElementById(`edit-items-${champId}`).value;
         const combos = document.getElementById(`edit-combos-${champId}`).value;
         const youtube = document.getElementById(`edit-youtube-${champId}`).value;
-        const memo = document.getElementById(`memo-${champId}`).value; // 現在のメモも一緒に保存
-
+        const memo = document.getElementById(`memo-${champId}`).value;
         try {
             await setDoc(doc(db, "champ_data", champId), {
-                counter_items: items,
-                combos: combos,
-                youtube_id: youtube,
-                text: memo,
-                updatedAt: new Date()
-            }, { merge: true }); // merge:true で既存データを壊さずに更新
-
+                counter_items: items, combos: combos, youtube_id: youtube, text: memo, updatedAt: new Date()
+            }, { merge: true });
             alert("データベースに保存しました！");
-            
-            // 最新のデータを取得し直して再描画
             showDetail(activeChamp);
-            
         } catch (error) {
             console.error("保存エラー:", error);
             alert("保存に失敗しました。");
         }
     }
 
-    // メモの自動保存処理（既存の仕組みをDBの新しい構成に対応）
     let typingTimer;
     window.autoSaveMemo = function(champId) {
         const textarea = document.getElementById(`memo-${champId}`);
@@ -448,11 +573,7 @@
         typingTimer = setTimeout(async () => {
             if (statusEl) statusEl.textContent = "(⬆ 保存中...)";
             try {
-                await setDoc(doc(db, "champ_data", champId), {
-                    text: textarea.value,
-                    updatedAt: new Date()
-                }, { merge: true });
-                
+                await setDoc(doc(db, "champ_data", champId), { text: textarea.value, updatedAt: new Date() }, { merge: true });
                 if (statusEl) {
                     statusEl.style.color = "#00d4ff"; statusEl.textContent = "(✓ 保存完了)";
                     setTimeout(() => { if (statusEl.textContent === "(✓ 保存完了)") statusEl.textContent = ""; }, 2000);
