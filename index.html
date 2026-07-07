@@ -413,7 +413,11 @@
 
         // タブの中身を作成する関数
         const createTabHtml = (keyName, name, cd, desc, videoKey, isActive) => {
+            // ★ リワーク等に対応するため、公式動画の命名規則をより厳密に一致させます
+            // Riotのプレビュー動画は「ability_{キー番号}_{動画キー}1.webm」の形式です
+            const padKey = String(champ.key).padStart(4, '0');
             const videoUrl = `https://d28xe8vt774jo5.cloudfront.net/champion-abilities/${padKey}/ability_${padKey}_${videoKey}1.webm`;
+    
             return `
             <div id="tab-content-${champ.id}-${keyName}" class="skill-content-area ${isActive ? 'active' : ''}">
                 <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
@@ -421,9 +425,10 @@
                     ${cd ? `<span class="cd-text">[CD: ${cd}秒]</span>` : ''}
                 </div>
                 <p class="info-text">${cleanText(desc)}</p>
-                <!-- ★ Riot公式の動画プレビュー (エラー時は非表示) -->
+                <!-- 動画が読み込めない場合は自動的に非表示にする設定 -->
                 <div class="skill-video-wrapper">
-                    <video src="${videoUrl}" autoplay loop muted playsinline onerror="this.parentElement.style.display='none'"></video>
+                    <video src="${videoUrl}" autoplay loop muted playsinline 
+                        onerror="this.parentElement.style.display='none'; console.log('動画が見つかりません');"></video>
                 </div>
             </div>`;
         };
